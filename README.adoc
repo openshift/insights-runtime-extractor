@@ -26,11 +26,11 @@ make build-dev-image
 
 This creates a `rust-dev` Container image that contains all the Rust plumbing to compile and execute the code
 
-## Run the development image and compile/run 
+## Run the development image and compile the Rust code base
 
 [source,bash]
 ----
-make dev
+make rust-dev
 
 # you are then inside a container ready to compile the Rust code
 make

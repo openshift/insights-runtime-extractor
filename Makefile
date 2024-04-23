@@ -3,8 +3,8 @@
 build-dev-image:
 	./scripts/build-dev.sh
 
-dev:
-	./scripts/dev.sh
+rust-dev:
+	./scripts/rust-dev.sh
 
 build-image:
 	./scripts/build.sh
