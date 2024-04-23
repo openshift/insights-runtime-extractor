@@ -1,0 +1,113 @@
+# Specification for OpenShift Insights Runtime Workload 
+:toc:
+
+## Summary
+
+This document defines the content and structure of the runtime info captured and output by the container scanner that is gathered by the https://github.com/openshift/insights-operator/tree/master[OpenShift Insights Operator].
+
+## Data Model
+
+The container scanner checks for all containers running on a worker node and returns a JSON payload with all the extracted data.
+
+The JSON payload is composed of map of namespaces that were scanned:
+
+* the key is the *name of the namespace*.
+* the value is composed of a map of pods that belongs to this namespace:
+** the key is the *name of the pod*.
+** the value is composed of a map of the containers that belongs to this pod
+*** the key is the *container ID* (with the format `cri-o://xxxxx`)
+*** the value is a map of the extracted runtime information for this container:
+**** `os-release-id` - OS identifier
+***** Optional
+***** Its value corresponds to the `ID` field in the `/etc/os-release` file
+**** `os-release-version-id` - OS version identifier
+***** Optional
+***** Its value corresponds to the `VERSION_ID` field in the `/etc/os-release` file
+**** `runtime-kind` - the kind of runtime of the container
+***** Optional
+***** Its value is determined by the container scanner after examing the process and its executable
+**** `runtime-kind-version` - the version of the kind of runtime of the container
+***** Optional
+***** Its value is extracted from the process
+**** `runtime-kind-implementer` - the entity that implemented the kind of runtime of the container
+***** Optional
+***** Its value is extracted from the process
+**** `runtimes` is an array of runtime informations detected by the container scanner.
+**** Each item of the `runtimes` array is composed of the fields:
+***** `name` - the name of a runtime component of the process (it can be a libary, a framework, an application server)
+****** Required
+****** Its value is extracted from the process and its namespaces
+***** `version` - the version of the runtime components
+****** Optional
+****** Its value is extracted from the process and its namespaces
+
+All these fields are optional & best-effort. There are many cases where they will not be present (scratch images, other runtimes, etc.).
+
+All the values reported by the container scanner in clear text and it is out of scope to obfuscate them.
+This obfuscation (required for privacy concern) is handled by the OpenShift Insights Operator when the operator populate its own data model with this JSON payload.
+
+All the values of these fields can and will evolve other time but the name of the fields MUST not change without further notice.
+
+## Examples
+
+Executing the container scanner on a worker node will report a JSON payload such as:
+
+[source,json]
+----
+{
+  "jmesnil-dev": {
+    "app1-m2er6": {
+      "cri-o://1232455343434": {
+        "os-release-id": "rhel",
+        "os-release-version-id": "8.9",
+        "runtime-kind": "Java",
+        "runtime-kind-version": "17.0.7",
+        "runtime-kind-implementer": "Red Hat, Inc.",
+        "runtimes": [
+          {
+            "name": "Quarkus",
+            "version": "2.13.8.Final-redhat-00004"
+          }, {
+            "name": "Keycloak",
+            "version": "22.0.10.redhat-00001"
+           }, {
+            "name": "LangChain4J",
+            "version": "0.30.0"
+          }
+        ]
+      },
+      "cri-o://7e345b423a1241": {
+        "runtime-kind": "Go",
+        "runtime-kind-version": "1.20.1"
+      }
+    },
+    "db1-er6et": {
+      "cri-o://6e924d4c88e158e9881c6": {
+        "os-release-id": "ol",
+        "os-release-version-id": "8.5",
+        "runtimes": [
+          {
+            "name": "PostgreSQL",
+            "version": "postgres (PostgreSQL) 15.6"
+          }
+        ]
+      }
+    }
+  }
+}
+----
+
+The  `app2-m2er6` pod in the `jmesnil-dev` namespace is composed of 2 containers:
+
+* The container `cri-o://1232455343434` has the following runtime information:
+** It is running Quarkus 2.13.8.Final-redhat-00004 (the version identifies it as a Red Hat Build of Quarkus), Keycloak 22.0.10.redhat-00001 (the version identifies it as a Red Hat Build of Keycloak) and LangChain4J 0.30.0.
+** It is a Java application running on 17.0.7 JVM from Red Hat, Inc. (which is a OpenJDK JVM)
+** The container image was built from Red Hat Entreprise Linux 8.9
+* The oother container `cri-o://7e345b423a1241` contains a executable runnig Go 1.20.1. It does not contain any information about the Operating System (it might be a scratch image) or any runtime components.
+
+
+The container `cri-o://6e924d4c88e158e9881c6` that belongs to the `db1-er6et` pod in the `jmesnil-dev` namespace has the following runtime information:
+
+* It is running PostgreSQL 15.6
+* The container image was built from Oracle Linux 8.9
+* It does not contain any information of the kind of runtime.
