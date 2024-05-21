@@ -11,3 +11,4 @@ log = "0.4.21"
 nix = {version = "0.28.0", features=["fs", "process", "sched", "user"]}
 rc-zip = "5.1.0"
 rc-zip-sync = "4.1.0"
+sysinfo = "0.30.12"
