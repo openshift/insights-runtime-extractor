@@ -2,7 +2,7 @@ if [[ -z "${IMAGE_REGISTRY}"  ]]; then
   IMAGE_REGISTRY="quay.io/jmesnil"
 fi
 if [[ -z "${TAG}"  ]]; then
-  TAG=main
+  TAG=latest
 fi
 IMG=$IMAGE_REGISTRY/insights-operator-runtime:$TAG
 
