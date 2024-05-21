@@ -42,10 +42,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Install qemu dependency
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y qemu-user-static
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1
     - name: Build the container image
       id: build-image
       uses: redhat-actions/buildah-build@v2
