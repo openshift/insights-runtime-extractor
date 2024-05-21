@@ -209,6 +209,7 @@ dependencies = [
  "nix",
  "rc-zip",
  "rc-zip-sync",
+ "serde_json",
  "sysinfo",
 ]
 
