@@ -48,6 +48,7 @@ jobs:
       with:
         image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: latest ${{ github.sha }}
+        platforms: linux/arm64,linux/amd64
         containerfiles: |
           ./Containerfile
     - name: Push To container registry
