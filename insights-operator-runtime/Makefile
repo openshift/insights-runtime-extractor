@@ -1,6 +1,6 @@
 .PHONY: build
 build: export RUSTFLAGS=-C target-feature=+crt-static
-build:
+build: check
 ifeq ($(TARGETARCH),arm64)
 	cargo build --release --target aarch64-unknown-linux-musl
 else
@@ -14,3 +14,7 @@ clean:
 .PHONY: test
 test:
 	cargo test
+
+.PHONY: check
+check:
+	cargo fmt -- --check
