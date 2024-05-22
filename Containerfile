@@ -27,5 +27,8 @@ FROM scratch
 
 COPY --from=rust-builder /crictl /crictl
 COPY --from=rust-builder /work/target/*/release/sleep /sleep
+COPY --from=rust-builder /work/target/*/release/scan-containers /scan-containers
+COPY --from=rust-builder /work/target/*/release/scan-container /scan-container
+COPY --from=rust-builder /work/config/ /etc/insights-operator-runtime/
 
 CMD ["/sleep"]
