@@ -3,12 +3,14 @@ use std::process::Command;
 
 use super::process::ContainerProcess;
 
+mod os;
+
 trait FingerPrint {
     fn can_apply_to(&self, process: &ContainerProcess) -> Option<Vec<String>>;
 }
 
 fn fingerprints() -> Vec<Box<dyn FingerPrint>> {
-    vec![]
+    vec![Box::new(os::Os {})]
 }
 
 pub fn run_fingerprints(process: &ContainerProcess) {
