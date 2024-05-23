@@ -18,3 +18,14 @@ test:
 .PHONY: check
 check:
 	cargo fmt -- --check
+
+export TEST_NAMESPACE=test-openshift-insights-00001
+
+e2e-setup:
+	export TEST_NAMESPACE=${TEST_NAMESPACE} && cd e2e && ./setup.sh
+
+e2e-test: e2e-setup
+	export TEST_NAMESPACE=${TEST_NAMESPACE} && cd e2e && go test -count=1 -v .
+
+clean-e2e:
+	oc delete namespace ${TEST_NAMESPACE}
