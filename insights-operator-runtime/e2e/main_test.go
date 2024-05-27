@@ -61,7 +61,7 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 						Name: "insights-operator-runtime-pull-secret",
 					}},
 					Containers: []corev1.Container{{
-						Name:            "container-scanner",
+						Name:            "insights-operator-runtime",
 						Image:           "ghcr.io/jmesnil/insights-operator-runtime:latest",
 						ImagePullPolicy: corev1.PullAlways,
 						Env: []corev1.EnvVar{{
