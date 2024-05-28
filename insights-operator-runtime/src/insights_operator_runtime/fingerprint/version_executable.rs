@@ -1,5 +1,4 @@
 use log::debug;
-use regex::Regex;
 
 use super::FingerPrint;
 use crate::config::Config;
@@ -18,11 +17,11 @@ impl FingerPrint for VersionExecutable {
         let fpr_runtime_executable = String::from("./fpr_runtime_executable");
         let outdir = format!("out/{}", process.pid);
 
-        if let Some(version_executable) =
-            config.fingerprints.versioned_executables.iter().find(|c| {
-                let re = Regex::new(&c.process_command).unwrap();
-                re.is_match(&process.command_line[0])
-            })
+        if let Some(version_executable) = config
+            .fingerprints
+            .versioned_executables
+            .iter()
+            .find(|c| c.process_names.contains(&process.name))
         {
             return Some(vec![
                 fpr_kind_executable,

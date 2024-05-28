@@ -1,10 +1,9 @@
 # Configuration file for the insights-operator-runtime
 
 [[fingerprints.version-executables]]
-process-command = ".*/?node$"
+process-names = ["node"]
 runtime-kind-name = "Node.js"
 
 [[fingerprints.version-executables]]
-# matches python and python3
-process-command = ".*/?python.?"
+process-names = ["python", "python3"]
 runtime-kind-name = "Python"

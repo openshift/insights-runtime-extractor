@@ -350,7 +350,6 @@ dependencies = [
  "nix",
  "rc-zip",
  "rc-zip-sync",
- "regex",
  "serde",
  "serde_json",
  "sysinfo",
