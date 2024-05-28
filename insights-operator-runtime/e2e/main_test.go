@@ -18,6 +18,8 @@ var (
 	insightsOperatorRuntimeNamespace string
 	// namespace is the namespace where workloads are deployed before they are scanned
 	namespace string
+	// testedImage is the URL of the image for the insights-operator-runtime
+	testedImage string
 )
 
 func TestMain(m *testing.M) {
@@ -25,6 +27,10 @@ func TestMain(m *testing.M) {
 	testEnv = env.NewWithConfig(cfg)
 	namespace = envconf.RandomName("e2e", 10)
 	insightsOperatorRuntimeNamespace = os.Getenv("TEST_NAMESPACE")
+	testedImage = "ghcr.io/jmesnil/insights-operator-runtime:latest"
+	if value, ok := os.LookupEnv("TESTED_IMAGE"); ok {
+		testedImage = value
+	}
 
 	insightsOperatorRuntime := newContainerScannerDaemonSet()
 
@@ -62,7 +68,7 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 					}},
 					Containers: []corev1.Container{{
 						Name:            "insights-operator-runtime",
-						Image:           "quay.io/jmesnil/insights-operator-runtime:latest",
+						Image:           testedImage,
 						ImagePullPolicy: corev1.PullAlways,
 						Env: []corev1.EnvVar{{
 							Name:  "CONTAINER_RUNTIME_ENDPOINT",

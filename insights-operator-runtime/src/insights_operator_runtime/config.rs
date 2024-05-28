@@ -49,4 +49,22 @@ mod tests {
         assert!(!re.is_match("nodexx"));
         assert!(!re.is_match("/usr/local/node/bin/foo"));
     }
+
+    #[test]
+    fn it_can_match_python_process() {
+        let config = get_config("./config");
+
+        let node_config = config
+            .fingerprints
+            .versioned_executables
+            .iter()
+            .find(|c| c.runtime_kind_name == "Python")
+            .unwrap();
+        let re = Regex::new(&node_config.process_command).unwrap();
+
+        assert!(re.is_match("/usr/local/bin/python"));
+        assert!(re.is_match("/usr/local/bin/python3"));
+        assert!(re.is_match("python"));
+        assert!(re.is_match("python3"));
+    }
 }
