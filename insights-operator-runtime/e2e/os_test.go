@@ -35,19 +35,21 @@ func testBaseImage(t *testing.T, baseImage string, expectedOsReleaseId string, e
 	containerName := "main"
 	deployment := newBaseImageDeployment(namespace, appName, 1, containerName, baseImage)
 
-	g := Ω.NewWithT(t)
 	feature := features.New("base image "+baseImage).
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			g := Ω.NewWithT(t)
 			ctx, err := deployAndWaitForReadiness(deployment, "app="+appName)(ctx, c)
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 			return ctx
 		}).
 		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			g := Ω.NewWithT(t)
 			ctx, err := undeploy(deployment)(ctx, c)
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 			return ctx
 		}).
 		Assess("is scanned", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			g := Ω.NewWithT(t)
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
 			result, err := scanContainer(ctx, g, c, cid, nodeName)
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())

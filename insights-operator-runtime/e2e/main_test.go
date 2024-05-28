@@ -62,7 +62,7 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 					}},
 					Containers: []corev1.Container{{
 						Name:            "insights-operator-runtime",
-						Image:           "ghcr.io/jmesnil/insights-operator-runtime:latest",
+						Image:           "quay.io/jmesnil/insights-operator-runtime:latest",
 						ImagePullPolicy: corev1.PullAlways,
 						Env: []corev1.EnvVar{{
 							Name:  "CONTAINER_RUNTIME_ENDPOINT",

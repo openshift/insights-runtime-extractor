@@ -1,23 +1,28 @@
 use log::{debug, warn};
 use std::process::Command;
 
-use super::process::ContainerProcess;
+use crate::config::Config;
+use crate::insights_operator_runtime::ContainerProcess;
 
 mod os;
+mod version_executable;
 
 trait FingerPrint {
-    fn can_apply_to(&self, process: &ContainerProcess) -> Option<Vec<String>>;
+    fn can_apply_to(&self, config: &Config, process: &ContainerProcess) -> Option<Vec<String>>;
 }
 
 fn fingerprints() -> Vec<Box<dyn FingerPrint>> {
-    vec![Box::new(os::Os {})]
+    vec![
+        Box::new(os::Os {}),
+        Box::new(version_executable::VersionExecutable {}),
+    ]
 }
 
-pub fn run_fingerprints(process: &ContainerProcess) {
+pub fn run_fingerprints(config: &Config, process: &ContainerProcess) {
     debug!("👆 Fingerprinting process {}", &process.pid);
 
     for fingerprint in fingerprints() {
-        if let Some(exec) = fingerprint.can_apply_to(&process) {
+        if let Some(exec) = fingerprint.can_apply_to(config, &process) {
             debug!("Executing {:?}", &exec);
             if let Some((command, args)) = exec.split_first() {
                 let command = Command::new(&command).args(args).output();

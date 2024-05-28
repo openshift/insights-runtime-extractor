@@ -1,3 +1,4 @@
+pub mod config;
 pub mod container;
 pub mod file;
 mod fingerprint;
@@ -14,6 +15,7 @@ use std::fs::{self, File};
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd};
 use std::time::Instant;
 
+use crate::config::Config;
 use crate::file::read_key_value_file;
 use crate::insights_operator_runtime::container::get_root_pid;
 use crate::ScannerError;
@@ -49,7 +51,7 @@ pub struct RuntimeInfo {
     runtimes: Vec<RuntimeComponentInfo>,
 }
 
-pub fn scan_container(container_id: &String) -> Option<RuntimeInfo> {
+pub fn scan_container(config: &Config, container_id: &String) -> Option<RuntimeInfo> {
     info!(
         "⚙️  Running Container Scanner on container {}...",
         container_id
@@ -78,16 +80,12 @@ pub fn scan_container(container_id: &String) -> Option<RuntimeInfo> {
             &process.pid
         ));
 
-        // copy the config.toml to the pid_ouput so that it can be read by fingerprints executables
-        fs::copy(
-            "/etc/insights-operator-runtime/config.toml",
-            pid_output.clone() + "/config.toml",
-        )
-        .ok()?;
+        // copy the config.toml to the pid_output so that it can be read by fingerprints executables
+        fs::copy("/config.toml", pid_output.clone() + "/config.toml").ok()?;
 
         let start = Instant::now();
 
-        let _ = fork_and_exec(&process, &current_dir);
+        let _ = fork_and_exec(&config, &process, &current_dir);
 
         let duration = start.elapsed().as_millis();
         trace!("🕑 Executed fingerprints in {:?}ms", duration);
@@ -167,7 +165,11 @@ pub fn scan_container(container_id: &String) -> Option<RuntimeInfo> {
     None
 }
 
-fn fork_and_exec(process: &ContainerProcess, current_dir: &File) -> Result<(), ScannerError> {
+fn fork_and_exec(
+    config: &Config,
+    process: &ContainerProcess,
+    current_dir: &File,
+) -> Result<(), ScannerError> {
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
             match waitpid(child, None) {
@@ -193,7 +195,7 @@ fn fork_and_exec(process: &ContainerProcess, current_dir: &File) -> Result<(), S
                 perms::check_no_privileged_perms()
                     .expect("Must not have privileged permissions to run fingerprints");
             }
-            fingerprint::run_fingerprints(&process);
+            fingerprint::run_fingerprints(&config, &process);
 
             let duration = start.elapsed().as_millis();
             trace!("Child process executed in {:?}ms", duration);

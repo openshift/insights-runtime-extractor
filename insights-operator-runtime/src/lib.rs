@@ -1,5 +1,6 @@
 mod insights_operator_runtime;
 
+pub use crate::insights_operator_runtime::config;
 pub use crate::insights_operator_runtime::container::get_container;
 pub use crate::insights_operator_runtime::container::get_containers;
 pub use crate::insights_operator_runtime::file;

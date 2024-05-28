@@ -21,7 +21,7 @@ spec:
       containers:
         - name: insights-operator-runtime
           # Replace the image field it is is coming from another image registry
-          image: ghcr.io/jmesnil/insights-operator-runtime:latest
+          image: quay.io/jmesnil/insights-operator-runtime:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT

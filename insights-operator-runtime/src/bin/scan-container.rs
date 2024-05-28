@@ -1,4 +1,5 @@
 use clap::Parser;
+use insights_operator_runtime::config;
 use insights_operator_runtime::{RuntimeInfo, ScannerError};
 use log::{info, trace, warn};
 use std::collections::HashMap;
@@ -27,11 +28,15 @@ fn main() -> Result<(), ScannerError> {
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
 
+    let config = config::get_config("/");
+
     let container_id = args.container_id;
 
     info!("Scanning container 🫙 {}", container_id);
     if let Some(container) = insights_operator_runtime::get_container(&container_id) {
-        if let Some(runtime_info) = insights_operator_runtime::scan_container(&container_id) {
+        if let Some(runtime_info) =
+            insights_operator_runtime::scan_container(&config, &container_id)
+        {
             // keys are pod-namespace, pod-name, container-id
             let mut out: HashMap<String, HashMap<String, HashMap<String, RuntimeInfo>>> =
                 HashMap::new();
