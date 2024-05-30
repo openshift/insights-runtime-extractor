@@ -2,7 +2,6 @@ package e2e
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -31,7 +30,6 @@ func TestCentOs7(t *testing.T) {
 func testBaseImage(t *testing.T, baseImage string, expectedOsReleaseId string, expectedOsReleaseVersionId string) {
 
 	appName := envconf.RandomName("os", 10)
-	fmt.Printf("Running base image with name %s", appName)
 	containerName := "main"
 	deployment := newBaseImageDeployment(namespace, appName, 1, containerName, baseImage)
 

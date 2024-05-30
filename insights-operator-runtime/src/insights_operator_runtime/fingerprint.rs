@@ -4,6 +4,7 @@ use std::process::Command;
 use crate::config::Config;
 use crate::insights_operator_runtime::ContainerProcess;
 
+mod java;
 mod os;
 mod version_executable;
 
@@ -15,6 +16,7 @@ fn fingerprints() -> Vec<Box<dyn FingerPrint>> {
     vec![
         Box::new(os::Os {}),
         Box::new(version_executable::VersionExecutable {}),
+        Box::new(java::Java {}),
     ]
 }
 

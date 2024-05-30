@@ -11,6 +11,8 @@ pub struct Config {
 pub struct Fingerprints {
     #[serde(rename = "version-executables")]
     pub versioned_executables: Vec<VersionExecutables>,
+
+    pub java: Vec<JavaFingerprint>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -19,6 +21,18 @@ pub struct VersionExecutables {
     pub process_names: Vec<String>,
     #[serde(rename = "runtime-kind-name")]
     pub runtime_kind_name: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct JavaFingerprint {
+    #[serde(rename = "runtime-name")]
+    pub runtime_name: String,
+    #[serde(rename = "main-class")]
+    pub main_class: String,
+    #[serde(rename = "read-manifest-of-executable-jar")]
+    pub read_manifest_of_executable_jar: bool,
+    #[serde(rename = "jar-version-manifest-entry")]
+    pub jar_version_manifest_entry: String,
 }
 
 pub fn get_config(dir: &str) -> Config {
