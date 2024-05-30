@@ -11,6 +11,7 @@ runtime-kind-name = "Python"
 [[fingerprints.java]]
 runtime-name = "Quarkus"
 main-class = "io.quarkus.bootstrap.runner.QuarkusEntryPoint"
+main-jar = "io.quarkus.quarkus-core"
 read-manifest-of-executable-jar = false
 jar-version-manifest-entry = "Implementation-Version"
 
@@ -19,3 +20,10 @@ runtime-name = "Spring Boot"
 main-class = "org.springframework.boot.loader.JarLauncher"
 read-manifest-of-executable-jar = true
 jar-version-manifest-entry = "Spring-Boot-Version"
+
+[[fingerprints.java]]
+runtime-name = "Apache Tomcat"
+main-class = "org.apache.catalina.startup.Bootstrap"
+main-jar = "bootstrap.jar"
+read-manifest-of-executable-jar = true
+jar-version-manifest-entry = "Implementation-Version"

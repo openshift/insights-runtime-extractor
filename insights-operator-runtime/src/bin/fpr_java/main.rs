@@ -26,11 +26,6 @@ fn main() -> io::Result<()> {
         for (key, value) in &manifest_entries {
             match key.as_str() {
                 "Implementation-Title" => match value.as_str() {
-                    impl_title if impl_title.contains("Apache Tomcat") => {
-                        if let Some(version) = manifest_entries.get("Implementation-Version") {
-                            entries.insert(String::from("Apache Tomcat"), version.to_string());
-                        }
-                    }
                     impl_title if impl_title.starts_with("kafka_") => {
                         let kafka_version = impl_title.rsplit('_').next().unwrap_or("");
                         if let Some(version) = manifest_entries.get("Implementation-Version") {

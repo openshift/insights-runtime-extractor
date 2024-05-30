@@ -29,6 +29,8 @@ pub struct JavaFingerprint {
     pub runtime_name: String,
     #[serde(rename = "main-class")]
     pub main_class: String,
+    #[serde(rename = "main-jar")]
+    pub main_jar: Option<String>,
     #[serde(rename = "read-manifest-of-executable-jar")]
     pub read_manifest_of_executable_jar: bool,
     #[serde(rename = "jar-version-manifest-entry")]

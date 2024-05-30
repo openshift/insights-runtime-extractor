@@ -53,29 +53,26 @@ impl FingerPrint for Java {
             .and_then(|classpath| {
                 debug!("java process is using classpath {}", classpath);
                 let mut jars = classpath.split(":");
-                match process.command_line.join("") {
-                    cmd if cmd.contains("org.apache.catalina.startup.Bootstrap") => {
-                        debug!("Detected Apache Tomcat application");
-                        jars.find(|jar| jar.ends_with("bootstrap.jar"))
-                            .and_then(|jar| Java::jar_executable(process, &jar))
-                    }
 
-                    cmd if cmd.contains("io.quarkus.bootstrap.runner.QuarkusEntryPoint") => {
-                        debug!("Detected Quarkus Application");
-                        // Quarkus application, let's extract the version from the io.quarkus.quarkus-core jar
-                        jars.find(|jar| jar.contains("io.quarkus.quarkus-core"))
-                            .and_then(|jar| Java::jar_executable(process, &jar))
+                // let's find the corresponding jar based on the main class
+                for java_fingerprints_config in _config.fingerprints.java.iter() {
+                    if process
+                        .command_line
+                        .contains(&java_fingerprints_config.main_class)
+                    {
+                        debug!("Detected {} ", java_fingerprints_config.runtime_name);
+                        let found = jars
+                            .find(|jar| {
+                                let main_jar = java_fingerprints_config.main_jar.as_ref().unwrap();
+                                jar.contains(main_jar)
+                            })
+                            .and_then(|jar| return Java::jar_executable(process, &jar));
+                        if found.is_some() {
+                            return found.into();
+                        }
                     }
-
-                    cmd if cmd.contains("kafka.Kafka") => {
-                        debug!("Detected Kafka Broker");
-                        // Kafka application, let's extract the version from the kafka_* jar
-                        jars.find(|jar| jar.contains("kafka_"))
-                            .and_then(|jar| Java::jar_executable(process, &jar))
-                    }
-
-                    _ => None,
                 }
+                None
             })
     }
 }
