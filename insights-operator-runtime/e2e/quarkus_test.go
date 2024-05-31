@@ -44,10 +44,10 @@ func TestQuarkus(t *testing.T) {
 			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("17.0.8"))
 			g.Expect(result.RuntimeKindImplementer).Should(Ω.Equal("Red Hat, Inc."))
 
-			//g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
-			//runtime := result.Runtimes[0]
-			//g.Expect(runtime.Name).To(Ω.Equal("Quarkus"))
-			//g.Expect(runtime.Version).To(Ω.Equal("3.4.1"))
+			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
+			runtime := result.Runtimes[0]
+			g.Expect(runtime.Name).To(Ω.Equal("Quarkus"))
+			g.Expect(runtime.Version).To(Ω.Equal("3.4.1"))
 
 			return ctx
 		})

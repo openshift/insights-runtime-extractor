@@ -44,10 +44,10 @@ func TestSpringBoot(t *testing.T) {
 			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("17.0.2"))
 			g.Expect(result.RuntimeKindImplementer).Should(Ω.Equal("Oracle Corporation"))
 
-			//g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
-			//runtime := result.Runtimes[0]
-			//g.Expect(runtime.Name).To(Ω.Equal("Spring Boot"))
-			//g.Expect(runtime.Version).To(Ω.Equal("3.1.4"))
+			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
+			runtime := result.Runtimes[0]
+			g.Expect(runtime.Name).To(Ω.Equal("Spring Boot"))
+			g.Expect(runtime.Version).To(Ω.Equal("3.1.4"))
 
 			return ctx
 		})
