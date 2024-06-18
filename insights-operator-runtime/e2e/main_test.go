@@ -63,9 +63,6 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 				Spec: corev1.PodSpec{
 					ServiceAccountName: "insights-operator-runtime-sa",
 					HostPID:            true,
-					ImagePullSecrets: []corev1.LocalObjectReference{{
-						Name: "insights-operator-runtime-pull-secret",
-					}},
 					Containers: []corev1.Container{{
 						Name:            "insights-operator-runtime",
 						Image:           testedImage,

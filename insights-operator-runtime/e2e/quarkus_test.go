@@ -53,3 +53,49 @@ func TestQuarkus(t *testing.T) {
 		})
 	_ = testEnv.Test(t, feature.Feature())
 }
+
+func TestQuarkusNative(t *testing.T) {
+
+	appName := "quarkus-native"
+	containerName := "c1"
+	image := "quay.io/jmesnil/quarkus-native-app"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Upstream Native Quarkus").
+		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			g := Ω.NewWithT(t)
+
+			ctx, err := deployAndWaitForReadiness(deployment, "app="+appName)(ctx, c)
+			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			return ctx
+		}).
+		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			g := Ω.NewWithT(t)
+
+			ctx, err := undeploy(deployment)(ctx, c)
+			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			return ctx
+		}).
+		Assess("is scanned", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			g := Ω.NewWithT(t)
+
+			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
+			result, err := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+
+			g.Expect(result.OsReleaseId).Should(Ω.Equal("debian"))
+			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("11"))
+			g.Expect(result.RuntimeKind).Should(Ω.Equal("GraalVM"))
+			g.Expect(result.RuntimeKindVersion).Should(Ω.BeEmpty())
+			g.Expect(result.RuntimeKindImplementer).Should(Ω.BeEmpty())
+
+			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
+			runtime := result.Runtimes[0]
+			g.Expect(runtime.Name).To(Ω.Equal("Quarkus"))
+			// In native mode, Quarkus does not expose its version
+			g.Expect(runtime.Version).To(Ω.BeEmpty())
+
+			return ctx
+		})
+	_ = testEnv.Test(t, feature.Feature())
+}

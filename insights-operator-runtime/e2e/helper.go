@@ -180,6 +180,8 @@ func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid stri
 
 	fmt.Printf("Scanned container %s:\n%s\n", cid, result)
 
+	fmt.Printf("stderr:%s\n", stderr.String())
+
 	var scanOutput map[string]map[string]map[string]workloadInfo
 	json.Unmarshal([]byte(result), &scanOutput)
 

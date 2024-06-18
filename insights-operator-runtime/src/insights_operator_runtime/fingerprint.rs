@@ -5,6 +5,7 @@ use crate::config::Config;
 use crate::insights_operator_runtime::ContainerProcess;
 
 mod java;
+mod native_executable;
 mod os;
 mod version_executable;
 
@@ -17,6 +18,7 @@ fn fingerprints() -> Vec<Box<dyn FingerPrint>> {
         Box::new(os::Os {}),
         Box::new(version_executable::VersionExecutable {}),
         Box::new(java::Java {}),
+        Box::new(native_executable::NativeExecutable {}),
     ]
 }
 

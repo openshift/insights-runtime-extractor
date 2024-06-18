@@ -23,6 +23,14 @@ WORKDIR /work
 COPY insights-operator-runtime /work
 RUN make TARGETARCH=${TARGETARCH}
 
+FROM golang:1.22 as go-builder
+
+WORKDIR /workspace
+COPY go-fingerprints .
+
+ARG GO_LDFLAGS=""
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o fpr_native_executable -ldflags="${GO_LDFLAGS}" main.go
+
 FROM scratch
 
 
@@ -34,5 +42,8 @@ COPY --from=rust-builder /work/config/ /
 
 # All fingerprints executables are copied to the root directory with other executables
 COPY --from=rust-builder --chmod=755 /work/target/*/release/fpr_* /
+
+# Copy fingerprints written in Go
+COPY --from=go-builder --chmod=755 /workspace/fpr_* /
 
 CMD ["/sleep"]

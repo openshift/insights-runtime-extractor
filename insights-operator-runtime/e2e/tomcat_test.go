@@ -84,7 +84,7 @@ func TestJBossWebServer(t *testing.T) {
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
 			g.Expect(result.OsReleaseId).Should(Ω.Equal("rhel"))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("8.9"))
+			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("8.10"))
 			g.Expect(result.RuntimeKind).Should(Ω.Equal("Java"))
 			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("17.0.11"))
 			g.Expect(result.RuntimeKindImplementer).Should(Ω.Equal("Red Hat, Inc."))

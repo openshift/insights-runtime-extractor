@@ -20,6 +20,7 @@ This document defines the fingerprints that are detected by the OpenShift Insigh
 * stored in the data model
 ** the `runtime-kind` field is set with the value `Node.js`
 ** the `runtime-kind-version` field is set with the output of `node --version` (for example `v18.19.1`)
+** the `runtime-kind-implementer` field is not set
 
 ### Python Fingerprint
 
@@ -29,6 +30,7 @@ This document defines the fingerprints that are detected by the OpenShift Insigh
 * stored in the data model
 ** the `runtime-kind` field is set with the value `Python`
 ** the `runtime-kind-version` field is set with the output of the `--version` execution (for example `Python 3.12.2`)
+** the `runtime-kind-implementer` field is not set
 
 ### Java Fingerprint
 
@@ -39,6 +41,24 @@ This document defines the fingerprints that are detected by the OpenShift Insigh
 ** the `runtime-kind` field is set with the value `Java`
 ** the `runtime-kind-version` field is set with the value of the `JAVA_VERSION` field (if it is present)
 ** the `runtime-kind-implementer` field is set with the value of the `IMPLEMENTOR` field (if it is present)
+
+### Go Fingerprint
+
+* detected if the process is a ELF executable built from Go.
+* read from the executable symbol table and extract the Go version
+* stored in the data model
+** the `runtime-kind` field is set with the value `Golang`
+** the `runtime-kind-version` field is set with the extracted Go version (for example `go1.19.13`)
+** the `runtime-kind-implementer` field is not set
+
+### GraalVM Fingerprint
+
+* detected if the process is a ELF executable and contains the `.svm_heap` symbol
+* read from the executable symbol table
+* stored in the data model
+** the `runtime-kind` field is set with the value `GraalVM`
+** the `runtime-kind-version` field is not set
+** the `runtime-kind-implementer` field is not set
 
 ## Runtime Fingerprints
 
@@ -73,3 +93,10 @@ jar
 ** the name of the runtime is `Apache Tomcat`
 ** the version corresponds to the extracted `Implementation-Version`
 
+### GraalVM Runtimes Fingerprints
+
+If the executable is detected as a `GraalVM` runtime kind and the `quarkus.native` string is present
+
+* stored in the data model as a runtime:
+** the name of the runtime is `Quarkus`
+** the version is not set
