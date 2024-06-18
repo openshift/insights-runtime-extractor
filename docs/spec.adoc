@@ -67,18 +67,12 @@ Executing the container scanner on a worker node will report a JSON payload such
           {
             "name": "Quarkus",
             "version": "2.13.8.Final-redhat-00004"
-          }, {
-            "name": "Keycloak",
-            "version": "22.0.10.redhat-00001"
-           }, {
-            "name": "LangChain4J",
-            "version": "0.30.0"
           }
         ]
       },
       "cri-o://7e345b423a1241": {
         "runtime-kind": "Go",
-        "runtime-kind-version": "1.20.1"
+        "runtime-kind-version": "go 1.20.1"
       }
     },
     "db1-er6et": {
@@ -100,7 +94,7 @@ Executing the container scanner on a worker node will report a JSON payload such
 The  `app2-m2er6` pod in the `jmesnil-dev` namespace is composed of 2 containers:
 
 * The container `cri-o://1232455343434` has the following runtime information:
-** It is running Quarkus 2.13.8.Final-redhat-00004 (the version identifies it as a Red Hat Build of Quarkus), Keycloak 22.0.10.redhat-00001 (the version identifies it as a Red Hat Build of Keycloak) and LangChain4J 0.30.0.
+** It is running Quarkus 2.13.8.Final-redhat-00004 (the version identifies it as a Red Hat Build of Quarkus).
 ** It is a Java application running on 17.0.7 JVM from Red Hat, Inc. (which is a OpenJDK JVM)
 ** The container image was built from Red Hat Entreprise Linux 8.9
 * The oother container `cri-o://7e345b423a1241` contains a executable runnig Go 1.20.1. It does not contain any information about the Operating System (it might be a scratch image) or any runtime components.

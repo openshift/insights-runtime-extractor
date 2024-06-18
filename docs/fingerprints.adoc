@@ -1,0 +1,75 @@
+:toc:
+
+This document defines the fingerprints that are detected by the OpenShift Insights Operator runtime.
+
+## Operating System fingerprint 
+
+* read from `/etc/os-release` (if this file exists)
+** extract the values from the `ID` and `VERSION_ID` fields in that file.
+* stored in the data model
+** the `os-release-id` field is set with the value of the `ID` field
+** the `os-release-version-id` field is set with the value of the `VERSION_ID` field
+
+## Runtime Kind Fingerprints
+
+### Node.js Fingerprint
+
+* detected if the process name is `node`
+* no fingerprint on the file system
+* capture output of `node --version`
+* stored in the data model
+** the `runtime-kind` field is set with the value `Node.js`
+** the `runtime-kind-version` field is set with the output of `node --version` (for example `v18.19.1`)
+
+### Python Fingerprint
+
+* detected if the process name is `python` or `python3`
+* no fingerprint on the file system
+* capture output of `python --version` or `python3 --version`
+* stored in the data model
+** the `runtime-kind` field is set with the value `Python`
+** the `runtime-kind-version` field is set with the output of the `--version` execution (for example `Python 3.12.2`)
+
+### Java Fingerprint
+
+* detected if the process name is `java` and a `JAVA_HOME` environement variable is set in the process's environment
+* read from `$JAVA_HOME/release` if this file exists)
+** extract the values from the `JAVA_VERSION` and `IMPLEMENTOR` fields in that file.
+* stored in the data model
+** the `runtime-kind` field is set with the value `Java`
+** the `runtime-kind-version` field is set with the value of the `JAVA_VERSION` field (if it is present)
+** the `runtime-kind-implementer` field is set with the value of the `IMPLEMENTOR` field (if it is present)
+
+## Runtime Fingerprints
+
+### Java Runtimes Fingerprints
+
+If a Java process is detected, a "Java" fingerprint will be executed to attempt to identify the runtime(s) that composed the Java application.
+
+#### Quarkus Fingerprint
+
+If the main class is `io.quarkus.bootstrap.runner.QuarkusEntryPoint` (from a jar-executable or a classpath-executable), extract the `Implementation-Version` from the 
+jar prefixed by `io.quarkus.quarkus-core` to get the version of Quarkus.
+
+* stored in the data model as a runtime:
+** the name of the runtime is `Quarkus`
+** the version corresponds to the extracted `Implementation-Version`
+
+#### Spring Boot Fingerpints
+
+If the java process is a jar-executable with the main class being `org.springframework.boot.loader.JarLauncher`, extract the `Spring-Boot-Version` from that 
+jar to get the version of Spring Boot.
+
+* stored in the data model as a runtime:
+** the name of the runtime is `Spring Boot`
+** the version corresponds to the extracted `Spring-Boot-Version`
+
+#### Apache Tomcat & JBoss Web Server
+
+If the main class is `org.apache.catalina.startup.Bootstrap`, extract the `Implementation-Version` from the `bootstrap.jar`
+jar 
+
+* stored in the data model as a runtime:
+** the name of the runtime is `Apache Tomcat`
+** the version corresponds to the extracted `Implementation-Version`
+
