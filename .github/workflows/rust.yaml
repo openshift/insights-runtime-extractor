@@ -57,6 +57,6 @@ jobs:
       with:
         context: .
         file: Containerfile
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: true
         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
