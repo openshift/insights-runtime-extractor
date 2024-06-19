@@ -1,9 +1,12 @@
-use std::collections::HashMap;
-
 use clap::Parser;
-use insights_operator_runtime::config;
-use insights_operator_runtime::{RuntimeInfo, ScannerError};
 use log::{info, warn};
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
+
+use insights_operator_runtime::config;
+use insights_operator_runtime::file;
+use insights_operator_runtime::{RuntimeInfo, ScannerError};
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -24,6 +27,12 @@ fn main() -> Result<(), ScannerError> {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
 
     let config = config::get_config("/");
+
+    let exec_dir = format!("{}", std::process::id());
+    file::create_dir(&exec_dir).expect(&format!(
+        "Can not create execution directory  {}",
+        &exec_dir
+    ));
 
     info!("Scanning all containers");
     let containers = insights_operator_runtime::get_containers();
@@ -48,6 +57,8 @@ fn main() -> Result<(), ScannerError> {
         Err(_err) => warn!("Unable to serialize JSON"),
         Ok(json) => println!("{}", json),
     };
+
+    let _ = fs::remove_dir_all(PathBuf::from(&exec_dir));
 
     Ok(())
 }

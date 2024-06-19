@@ -10,7 +10,12 @@ mod os;
 mod version_executable;
 
 trait FingerPrint {
-    fn can_apply_to(&self, config: &Config, process: &ContainerProcess) -> Option<Vec<String>>;
+    fn can_apply_to(
+        &self,
+        config: &Config,
+        out_dir: &String,
+        process: &ContainerProcess,
+    ) -> Option<Vec<String>>;
 }
 
 fn fingerprints() -> Vec<Box<dyn FingerPrint>> {
@@ -22,11 +27,11 @@ fn fingerprints() -> Vec<Box<dyn FingerPrint>> {
     ]
 }
 
-pub fn run_fingerprints(config: &Config, process: &ContainerProcess) {
+pub fn run_fingerprints(config: &Config, out_dir: &String, process: &ContainerProcess) {
     debug!("👆 Fingerprinting process {}", &process.pid);
 
     for fingerprint in fingerprints() {
-        if let Some(exec) = fingerprint.can_apply_to(config, &process) {
+        if let Some(exec) = fingerprint.can_apply_to(config, &out_dir, &process) {
             debug!("Executing {:?}", &exec);
             if let Some((command, args)) = exec.split_first() {
                 let command = Command::new(&command).args(args).output();

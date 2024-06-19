@@ -1,9 +1,13 @@
 use clap::Parser;
-use insights_operator_runtime::config;
-use insights_operator_runtime::{RuntimeInfo, ScannerError};
 use log::{info, trace, warn};
 use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 use std::time::Instant;
+
+use insights_operator_runtime::config;
+use insights_operator_runtime::file;
+use insights_operator_runtime::{RuntimeInfo, ScannerError};
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -32,6 +36,12 @@ fn main() -> Result<(), ScannerError> {
 
     let container_id = args.container_id;
 
+    let exec_dir = format!("{}", std::process::id());
+    file::create_dir(&exec_dir).expect(&format!(
+        "Can not create execution directory  {}",
+        &exec_dir
+    ));
+
     info!("Scanning container 🫙 {}", container_id);
     if let Some(container) = insights_operator_runtime::get_container(&container_id) {
         if let Some(runtime_info) =
@@ -53,6 +63,8 @@ fn main() -> Result<(), ScannerError> {
             };
         }
     }
+
+    let _ = fs::remove_dir_all(PathBuf::from(&exec_dir));
 
     let duration = start.elapsed().as_millis();
     trace!("🕑 Scanned container in {:?}ms", duration);

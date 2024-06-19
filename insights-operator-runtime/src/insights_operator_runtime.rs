@@ -13,6 +13,7 @@ use process::ContainerProcess;
 use serde::Serialize;
 use std::fs::{self, File};
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd};
+use std::path::PathBuf;
 use std::time::Instant;
 
 use crate::config::Config;
@@ -73,8 +74,10 @@ pub fn scan_container(config: &Config, container_id: &String) -> Option<RuntimeI
     info!("🔎  Fingerprinting {} processes...", leaves.len());
 
     if let Some(process) = leaves.get(0) {
-        let pid_output = format!("out/{}", &process.pid);
         // create a directory to store this process' fingerprints
+        // that is put it under a directory from the executing process so that concurrent
+        // execution are stored in separate directories.
+        let pid_output = format!("{}/{}", std::process::id(), &process.pid);
         file::create_dir(&pid_output).expect(&format!(
             "Can not create output directory for pid {}",
             &process.pid
@@ -85,7 +88,7 @@ pub fn scan_container(config: &Config, container_id: &String) -> Option<RuntimeI
 
         let start = Instant::now();
 
-        let _ = fork_and_exec(&config, &process, &current_dir);
+        let _ = fork_and_exec(&config, &process, &current_dir, &pid_output);
 
         let duration = start.elapsed().as_millis();
         trace!("🕑 Executed fingerprints in {:?}ms", duration);
@@ -100,7 +103,7 @@ pub fn scan_container(config: &Config, container_id: &String) -> Option<RuntimeI
         let mut runtimes: Vec<RuntimeComponentInfo> = Vec::new();
 
         // read the files written to pid_output by the fingerprint and returns a JSON
-        if let Ok(fp_files) = fs::read_dir(&pid_output) {
+        if let Ok(fp_files) = fs::read_dir(PathBuf::from(&pid_output)) {
             for fingerprint in fp_files {
                 match fingerprint {
                     Err(_err) => warn!("Unable to read fingerprints"),
@@ -144,7 +147,6 @@ pub fn scan_container(config: &Config, container_id: &String) -> Option<RuntimeI
                     Ok(_) => (),
                 }
             }
-            let _ = fs::remove_dir_all(pid_output);
         }
 
         let duration = start.elapsed().as_millis();
@@ -169,6 +171,7 @@ fn fork_and_exec(
     config: &Config,
     process: &ContainerProcess,
     current_dir: &File,
+    out_dir: &String,
 ) -> Result<(), ScannerError> {
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
@@ -195,7 +198,7 @@ fn fork_and_exec(
                 perms::check_no_privileged_perms()
                     .expect("Must not have privileged permissions to run fingerprints");
             }
-            fingerprint::run_fingerprints(&config, &process);
+            fingerprint::run_fingerprints(&config, &out_dir, &process);
 
             let duration = start.elapsed().as_millis();
             trace!("Child process executed in {:?}ms", duration);

@@ -7,7 +7,11 @@ use crate::insights_operator_runtime::ContainerProcess;
 pub struct Java {}
 
 impl Java {
-    fn jar_executable(process: &ContainerProcess, jar: &str) -> Option<Vec<String>> {
+    fn jar_executable(
+        out_dir: &String,
+        process: &ContainerProcess,
+        jar: &str,
+    ) -> Option<Vec<String>> {
         let jar = match jar {
             jar if jar.starts_with("/") => jar.to_owned(),
             jar => format!("{:?}/{}", process.cwd, jar),
@@ -15,14 +19,19 @@ impl Java {
 
         return Some(vec![
             String::from("./fpr_java"),
-            format!("out/{}", process.pid),
+            out_dir.to_string(),
             jar.to_string(),
         ]);
     }
 }
 
 impl FingerPrint for Java {
-    fn can_apply_to(&self, _config: &Config, process: &ContainerProcess) -> Option<Vec<String>> {
+    fn can_apply_to(
+        &self,
+        _config: &Config,
+        out_dir: &String,
+        process: &ContainerProcess,
+    ) -> Option<Vec<String>> {
         if !process.name.ends_with("java") {
             return None;
         }
@@ -37,7 +46,7 @@ impl FingerPrint for Java {
             .and_then(|i| process.command_line.get(i + 1))
             .and_then(|jar| {
                 debug!("Executable jar is {:?}", jar);
-                return Java::jar_executable(process, jar);
+                return Java::jar_executable(&out_dir, process, jar);
             });
 
         if exec.is_some() {
@@ -66,7 +75,7 @@ impl FingerPrint for Java {
                                 let main_jar = java_fingerprints_config.main_jar.as_ref().unwrap();
                                 jar.contains(main_jar)
                             })
-                            .and_then(|jar| return Java::jar_executable(process, &jar));
+                            .and_then(|jar| return Java::jar_executable(&out_dir, process, &jar));
                         if found.is_some() {
                             return found.into();
                         }

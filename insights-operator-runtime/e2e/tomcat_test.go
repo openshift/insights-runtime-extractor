@@ -47,7 +47,7 @@ func TestTomcat(t *testing.T) {
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
 			runtime := result.Runtimes[0]
 			g.Expect(runtime.Name).To(Ω.Equal("Apache Tomcat"))
-			g.Expect(runtime.Version).To(Ω.Equal("11.0.0-M20"))
+			g.Expect(runtime.Version).To(Ω.Equal("11.0.0-M21"))
 
 			return ctx
 		})
