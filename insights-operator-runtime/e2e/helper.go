@@ -118,7 +118,7 @@ func podsReady(client klient.Client, selector string) apimachinerywait.Condition
 	}
 }
 
-func getInsightsOperatorRuntimePods(
+func getInsightsOperatorRuntimePodIPs(
 	ctx context.Context,
 	c *envconf.Config,
 	csNamespace string,
@@ -139,7 +139,7 @@ func getInsightsOperatorRuntimePods(
 		return nil, err
 	}
 	for _, pod := range podList.Items {
-		pods[pod.Spec.NodeName] = pod.ObjectMeta.Name
+		pods[pod.Spec.NodeName] = pod.Status.PodIP
 	}
 	return pods, nil
 }
@@ -161,29 +161,28 @@ type workloadInfo struct {
 
 func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid string, nodeName string) (workloadInfo, error) {
 	client, err := c.NewClient()
-
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
-	insightsOperatorRuntimePods, err := getInsightsOperatorRuntimePods(ctx, c, insightsOperatorRuntimeNamespace, "app.kubernetes.io/name=insights-operator-runtime-e2e")
-	g.Expect(err).ShouldNot(Ω.HaveOccurred())
+	curlPodName := getPod(ctx, c, g, insightsOperatorRuntimeNamespace, "app.kubernetes.io/name=curl-e2e").Name
 
-	pod := insightsOperatorRuntimePods[nodeName]
-	execCommand := []string{"/scan-container", "--log-level", "trace", cid}
+	containerScannerPodIPs, err := getInsightsOperatorRuntimePodIPs(ctx, c, insightsOperatorRuntimeNamespace, "app.kubernetes.io/name=insights-operator-runtime-e2e")
+	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
 	var stdout, stderr bytes.Buffer
+	command := []string{"curl", "-s", "http://" + containerScannerPodIPs[nodeName] + ":8000/gather_runtime_info?cid=" + cid}
 
-	if err := client.Resources().ExecInPod(context.TODO(), insightsOperatorRuntimeNamespace, pod, "insights-operator-runtime", execCommand, &stdout, &stderr); err != nil {
-		g.Expect(err).ShouldNot(Ω.HaveOccurred())
-	}
+	err = client.Resources().ExecInPod(ctx, insightsOperatorRuntimeNamespace, curlPodName, "curl", command, &stdout, &stderr)
+	g.Expect(err).ShouldNot(Ω.HaveOccurred())
+	g.Expect(stderr.String()).Should(Ω.BeEmpty())
 
-	result := stdout.String()
-
-	fmt.Printf("Scanned container %s:\n%s\n", cid, result)
-
-	fmt.Printf("stderr:%s\n", stderr.String())
+	output := stdout.String()
+	fmt.Printf("Got output %s\n", output)
+	g.Expect(output).Should(Ω.Not(Ω.BeEmpty()))
 
 	var scanOutput map[string]map[string]map[string]workloadInfo
-	json.Unmarshal([]byte(result), &scanOutput)
+	json.Unmarshal([]byte(output), &scanOutput)
+
+	fmt.Printf("Got scan output %s\n", scanOutput)
 
 	g.Expect(scanOutput).To(Ω.HaveKey(namespace))
 

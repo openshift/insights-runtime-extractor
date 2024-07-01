@@ -33,14 +33,17 @@ func TestMain(m *testing.M) {
 	}
 
 	insightsOperatorRuntime := newContainerScannerDaemonSet()
+	curl := newCurlDeployment()
 
 	testEnv.Setup(
 		envfuncs.CreateNamespace(namespace),
+		deployAndWaitForReadiness(curl, "app.kubernetes.io/name=curl-e2e"),
 		deployAndWaitForReadiness(insightsOperatorRuntime, "app.kubernetes.io/name=insights-operator-runtime-e2e"),
 	)
 
 	testEnv.Finish(
 		undeploy(insightsOperatorRuntime),
+		undeploy(curl),
 		envfuncs.DeleteNamespace(namespace),
 	)
 
@@ -90,6 +93,29 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 								Type: &hostPathSocket,
 							},
 						}}},
+				},
+			},
+		},
+	}
+}
+
+func newCurlDeployment() *appsv1.Deployment {
+	labels := map[string]string{"app.kubernetes.io/name": "curl-e2e"}
+
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: "curl-e2e", Namespace: insightsOperatorRuntimeNamespace},
+		Spec: appsv1.DeploymentSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{Labels: labels},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Name:    "curl",
+						Image:   "quay.io/curl/curl",
+						Command: []string{"tail", "-f", "/dev/null"},
+					}},
 				},
 			},
 		},

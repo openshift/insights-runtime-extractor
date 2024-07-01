@@ -52,9 +52,9 @@ pub struct RuntimeInfo {
     runtimes: Vec<RuntimeComponentInfo>,
 }
 
-pub fn scan_container(config: &Config, container_id: &String) -> Option<RuntimeInfo> {
+pub fn scan_container(config: &Config, out: &String, container_id: &String) -> Option<RuntimeInfo> {
     info!(
-        "⚙️  Running Container Scanner on container {}...",
+        "⚙️  Running Container Scanner on container {} ...",
         container_id
     );
 
@@ -77,7 +77,7 @@ pub fn scan_container(config: &Config, container_id: &String) -> Option<RuntimeI
         // create a directory to store this process' fingerprints
         // that is put it under a directory from the executing process so that concurrent
         // execution are stored in separate directories.
-        let pid_output = format!("{}/{}", std::process::id(), &process.pid);
+        let pid_output = format!("{}/{}", out, &process.pid);
         file::create_dir(&pid_output).expect(&format!(
             "Can not create output directory for pid {}",
             &process.pid
@@ -173,6 +173,8 @@ fn fork_and_exec(
     current_dir: &File,
     out_dir: &String,
 ) -> Result<(), ScannerError> {
+    debug!("Storing fingerprints content in {}", out_dir);
+
     match unsafe { fork() } {
         Ok(ForkResult::Parent { child, .. }) => {
             match waitpid(child, None) {
@@ -198,7 +200,7 @@ fn fork_and_exec(
                 perms::check_no_privileged_perms()
                     .expect("Must not have privileged permissions to run fingerprints");
             }
-            fingerprint::run_fingerprints(&config, &out_dir, &process);
+            fingerprint::run_fingerprints(&config, out_dir, &process);
 
             let duration = start.elapsed().as_millis();
             trace!("Child process executed in {:?}ms", duration);

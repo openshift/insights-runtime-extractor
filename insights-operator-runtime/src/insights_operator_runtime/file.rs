@@ -229,7 +229,7 @@ mod tests {
     #[test]
     fn it_write_fingerprint() {
         let out = Path::new("target/tmp-test");
-        create_dir(out.to_str().unwrap()).expect("Create temporary directory");
+        create_dir(out).expect("Create temporary directory");
 
         let mut entries = HashMap::new();
         entries.insert(String::from("foo"), String::from("value1"));

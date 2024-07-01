@@ -35,9 +35,7 @@ FROM scratch
 
 
 COPY --from=rust-builder /crictl /crictl
-COPY --from=rust-builder /work/target/*/release/sleep /sleep
-COPY --from=rust-builder /work/target/*/release/scan-containers /scan-containers
-COPY --from=rust-builder /work/target/*/release/scan-container /scan-container
+COPY --from=rust-builder /work/target/*/release/http-server /http-server
 COPY --from=rust-builder /work/config/ /
 
 # All fingerprints executables are copied to the root directory with other executables
@@ -46,4 +44,4 @@ COPY --from=rust-builder --chmod=755 /work/target/*/release/fpr_* /
 # Copy fingerprints written in Go
 COPY --from=go-builder --chmod=755 /workspace/fpr_* /
 
-CMD ["/sleep"]
+CMD ["/http-server", "--log-level=trace"]
