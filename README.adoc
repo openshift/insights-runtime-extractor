@@ -8,11 +8,13 @@ feature integrated to the https://github.com/openshift/insights-operator/tree/ma
 
 This feature was proposed and approved by https://github.com/openshift/enhancements/blob/master/enhancements/insights/insights-runtime-extractor.md[this enhancement].
 
-## Build the container image
+The container image is published at `ghcr.io/jmesnil/insights-runtime-extractor:latest`
+
+## Build the container image for development
 
 [source,bash]
 ----
-make build-image
+./scripts/build.sh
 ----
 
 It builds a multi-arch (ARM64 & AMD64) image named `quay.io/jmesnil/insights-runtime-extractor:latest`.
@@ -21,7 +23,7 @@ It builds a multi-arch (ARM64 & AMD64) image named `quay.io/jmesnil/insights-run
 
 [source,bash]
 ----
-make build-dev-image
+./scripts/build-dev.sh
 ----
 
 This creates a `rust-dev` Container image that contains all the Rust plumbing to compile and execute the code
@@ -30,9 +32,8 @@ This creates a `rust-dev` Container image that contains all the Rust plumbing to
 
 [source,bash]
 ----
-make rust-dev
+./scripts/rust-dev.sh
 
 # you are then inside a container ready to compile the Rust code
 make
 ----
->>>>>>> 1724a3e (initial import)
