@@ -222,22 +222,23 @@ pub fn find_executable_in_path(executable_name: &str, path_var: &str) -> Option<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{collections::HashMap, path::PathBuf};
+    use std::collections::HashMap;
 
     use crate::file::create_dir;
 
     #[test]
     fn it_write_fingerprint() {
-        let out = Path::new("target/tmp-test");
-        create_dir(out).expect("Create temporary directory");
+        let out = String::from("target/tmp-test");
+        create_dir(&out).expect("Create temporary directory");
 
         let mut entries = HashMap::new();
         entries.insert(String::from("foo"), String::from("value1"));
         entries.insert(String::from("bar"), String::from("value2"));
 
-        write_fingerprint(out, "test", &entries).expect("wrote fingerprints");
+        let dir_path = Path::new(&out);
+        write_fingerprint(dir_path, "test", &entries).expect("wrote fingerprints");
 
-        let content = fs::read_to_string(PathBuf::from(&out).join("test-fingerprints.txt"))
+        let content = fs::read_to_string(dir_path.join("test-fingerprints.txt"))
             .expect("Read content from fingerprint file");
         // map is stored in natural order
         assert_eq!(
@@ -249,6 +250,6 @@ foo=value1
             .to_string()
         );
 
-        let _ = fs::remove_dir_all(out);
+        let _ = fs::remove_dir_all(dir_path);
     }
 }
