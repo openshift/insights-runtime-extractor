@@ -4,7 +4,7 @@ fi
 if [[ -z "${TAG}"  ]]; then
   TAG=latest
 fi
-IMG=$IMAGE_REGISTRY/insights-operator-runtime:$TAG
+IMG=$IMAGE_REGISTRY/insights-runtime-extractor:$TAG
 
 podman manifest rm $IMG
 podman manifest create $IMG

@@ -32,7 +32,7 @@ The current container scanner implementation is at https://gitlab.cee.redhat.com
 In order to be integrated and delivered with OpenShift, it must be a public project.
 As the container scanner is tied to the Insights Operator (whose source code is at https://github.com/openshift/insights-operator/), it makes sense to keep its source code under the same organization umbrella with a name matching its purpose.
 
-Making it available at https://github.com/openshift/insights-operator-runtime ensures that it is properly identified and handled as a component of OpenShift.
+Making it available at https://github.com/openshift/insights-runtime-extractor ensures that it is properly identified and handled as a component of OpenShift.
 
 ### Build Pipeline
 
@@ -42,8 +42,8 @@ This decisions relies on the capabilities for Konflux to build images based on R
 
 ## Decision
 
-The container scanner source code is located at https://github.com/openshift/insights-operator-runtime.
-It is built using Konflux and pushed to https://quay.io/repository/openshift/origin-insights-operator-runtime[quay.io/openshift/origin-insights-operator-runtime].
+The container scanner source code is located at https://github.com/openshift/insights-runtime-extractor.
+It is built using Konflux and pushed to https://quay.io/repository/openshift/origin-insights-runtime-extractor[quay.io/openshift/origin-insights-runtime-extractor].
 
 It is be integrated in OpenShift in the same fashion that the Insights Operator through OCP ART.
 

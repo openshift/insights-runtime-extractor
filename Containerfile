@@ -20,10 +20,10 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN bash -c 'if [ "$TARGETARCH" == "arm64" ]; then rustup target install aarch64-unknown-linux-musl ; else rustup target install x86_64-unknown-linux-musl; fi'
 WORKDIR /work
-COPY insights-operator-runtime /work
+COPY insights-runtime-extractor /work
 RUN make TARGETARCH=${TARGETARCH}
 
-FROM golang:1.22 as go-builder
+FROM golang:1.22 AS go-builder
 
 WORKDIR /workspace
 COPY go-fingerprints .

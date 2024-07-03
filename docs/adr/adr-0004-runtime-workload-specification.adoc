@@ -14,7 +14,7 @@ In the context of OpenShift Insights Operator integration, the container scanner
 
 ## Decision
 
-To provide a stable representation of the  workload runtime information extracted by the container scanner, it has been decided to define its specification in the spec.adoc document at https://github.com/jmesnil/insights-operator-runtime/blob/main/docs/spec.adoc.
+To provide a stable representation of the  workload runtime information extracted by the container scanner, it has been decided to define its specification in the spec.adoc document at https://github.com/jmesnil/insights-runtime-extractor/blob/main/docs/spec.adoc.
 
 This is the contract for the integration in the OpenShift Insights Operator.
 

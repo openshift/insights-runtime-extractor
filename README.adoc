@@ -15,7 +15,7 @@ This feature was proposed and approved by https://github.com/openshift/enhanceme
 make build-image
 ----
 
-It builds a multi-arch (ARM64 & AMD64) image named `quay.io/jmesnil/insights-operator-runtime:latest`.
+It builds a multi-arch (ARM64 & AMD64) image named `quay.io/jmesnil/insights-runtime-extractor:latest`.
 
 ## Build the development image
 
