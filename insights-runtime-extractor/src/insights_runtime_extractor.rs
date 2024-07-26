@@ -11,14 +11,14 @@ use nix::sys::wait::{waitpid, WaitStatus};
 use nix::unistd::{fork, seteuid, ForkResult};
 use process::ContainerProcess;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::os::fd::{AsFd, AsRawFd, BorrowedFd};
-use std::path::PathBuf;
+use std::path::Path;
 use std::time::Instant;
 
 use crate::config::Config;
-use crate::file::read_key_value_file;
-use crate::insights_runtime_extractor::container::get_root_pid;
+use crate::insights_runtime_extractor::container::{get_root_pid, Container};
 use crate::ScannerError;
 
 #[derive(Serialize, Debug)]
@@ -52,16 +52,16 @@ pub struct RuntimeInfo {
     runtimes: Vec<RuntimeComponentInfo>,
 }
 
-pub fn scan_container(config: &Config, out: &String, container_id: &String) -> Option<RuntimeInfo> {
+pub fn scan_container(config: &Config, out: &String, container: &Container) {
+    let container_id = match container.id.strip_prefix("cri-o://") {
+        Some(id) => id.to_string(),
+        None => container.id.to_string(),
+    };
+
     info!(
         "⚙️  Running Container Scanner on container {} ...",
-        container_id
+        &container.id
     );
-
-    let container_id = match container_id.strip_prefix("cri-o://") {
-        Some(container_id) => container_id.to_string(),
-        None => container_id.to_string(),
-    };
 
     let current_dir = File::open(".").unwrap();
     debug!("Using {:?} as the orphaned directory", current_dir);
@@ -77,94 +77,37 @@ pub fn scan_container(config: &Config, out: &String, container_id: &String) -> O
         // create a directory to store this process' fingerprints
         // that is put it under a directory from the executing process so that concurrent
         // execution are stored in separate directories.
-        let pid_output = format!("{}/{}", out, &process.pid);
-        file::create_dir(&pid_output).expect(&format!(
-            "Can not create output directory for pid {}",
-            &process.pid
+        let container_output = format!("{}/{}", out, &process.pid);
+        file::create_dir(&container_output).expect(&format!(
+            "Can not create output directory for container {}",
+            &container.id
         ));
 
+        let mut container_info = HashMap::new();
+        container_info.insert(String::from("pod-name"), container.pod_name.clone());
+        container_info.insert(
+            String::from("pod-namespace"),
+            container.pod_namespace.clone(),
+        );
+        container_info.insert(String::from("container-id"), container_id.clone());
+        let _ = file::write_fingerprint(
+            Path::new(&container_output),
+            "container-info",
+            &container_info,
+        );
+
         // copy the config.toml to the pid_output so that it can be read by fingerprints executables
-        fs::copy("/config.toml", pid_output.clone() + "/config.toml").ok()?;
+        fs::copy("/config.toml", container_output.clone() + "/config.toml")
+            .ok()
+            .expect("Copy configuration for fingerprints execution");
 
         let start = Instant::now();
 
-        let _ = fork_and_exec(&config, &process, &current_dir, &pid_output);
+        let _ = fork_and_exec(&config, &process, &current_dir, &container_output);
 
         let duration = start.elapsed().as_millis();
         trace!("🕑 Executed fingerprints in {:?}ms", duration);
-
-        let start = Instant::now();
-
-        let mut os_id: Option<String> = None;
-        let mut os_version_id: Option<String> = None;
-        let mut kind: Option<String> = None;
-        let mut kind_version: Option<String> = None;
-        let mut kind_implementer: Option<String> = None;
-        let mut runtimes: Vec<RuntimeComponentInfo> = Vec::new();
-
-        // read the files written to pid_output by the fingerprint and returns a JSON
-        if let Ok(fp_files) = fs::read_dir(PathBuf::from(&pid_output)) {
-            for fingerprint in fp_files {
-                match fingerprint {
-                    Err(_err) => warn!("Unable to read fingerprints"),
-                    Ok(fingerprint) if fingerprint.path().is_file() => {
-                        if let Some(path) = fingerprint.path().to_str() {
-                            if let Ok(fp_entries) = read_key_value_file(path) {
-                                match fingerprint.file_name().to_str() {
-                                    Some(filename) if filename == "os-fingerprints.txt" => {
-                                        os_id = fp_entries.get("os-release-id").cloned();
-                                        os_version_id =
-                                            fp_entries.get("os-release-version-id").cloned();
-                                    }
-                                    Some(filename)
-                                        if filename == "runtime-kind-fingerprints.txt" =>
-                                    {
-                                        kind = fp_entries.get("runtime-kind").cloned();
-                                        kind_version =
-                                            fp_entries.get("runtime-kind-version").cloned();
-                                        kind_implementer =
-                                            fp_entries.get("runtime-kind-implementer").cloned();
-                                    }
-                                    Some(_filename) if _filename.ends_with("-fingerprints.txt") => {
-                                        for (name, version) in fp_entries.iter() {
-                                            let version: Option<String> = if version == "" {
-                                                None
-                                            } else {
-                                                Some(version.to_string())
-                                            };
-                                            runtimes.push(RuntimeComponentInfo {
-                                                name: name.to_string(),
-                                                version,
-                                            });
-                                        }
-                                    }
-                                    Some(_) => (),
-                                    None => (),
-                                }
-                            }
-                        }
-                    }
-                    Ok(_) => (),
-                }
-            }
-        }
-
-        let duration = start.elapsed().as_millis();
-        trace!("🕑 Collected fingerprints files in {:?}ms", duration);
-
-        let info = RuntimeInfo {
-            os_id,
-            os_version_id,
-            kind,
-            kind_version,
-            kind_implementer,
-            runtimes,
-        };
-
-        return Some(info);
     }
-
-    None
 }
 
 fn fork_and_exec(

@@ -3,7 +3,7 @@ use std::fs;
 use std::time::Instant;
 
 use insights_runtime_extractor::config::{self, Config};
-use insights_runtime_extractor::{perms, RuntimeInfo};
+use insights_runtime_extractor::RuntimeInfo;
 
 use clap::Parser;
 use log::{debug, info, trace};
@@ -41,19 +41,11 @@ fn gather_runtime_info(request: &Request, config: &Config) -> Response {
     debug!("Relative execution directory: {}", &relative_exec_dir);
 
     // keys are pod-namespace, pod-name, container-id
-    let mut out: HashMap<String, HashMap<String, HashMap<String, RuntimeInfo>>> = HashMap::new();
+    let out: HashMap<String, HashMap<String, HashMap<String, RuntimeInfo>>> = HashMap::new();
 
     for container in containers {
         debug!("Scanning container 🫙 {}", container.id);
-        let namespace = out.entry(container.pod_namespace).or_insert(HashMap::new());
-        let pod = namespace
-            .entry(container.pod_name)
-            .or_insert(HashMap::new());
-        if let Some(runtime_info) =
-            insights_runtime_extractor::scan_container(&config, &relative_exec_dir, &container.id)
-        {
-            pod.insert(container.id, runtime_info);
-        }
+        insights_runtime_extractor::scan_container(&config, &relative_exec_dir, &container)
     }
 
     exec_dir.close().ok();
@@ -83,8 +75,6 @@ fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
 
     info!("Container Scanning on OpenShift 🔎 ☁️");
-
-    perms::check_privileged_perms().expect("Must have privileged permissions to scan containers");
 
     // verify that the configuration is properly setup
     let config_content = fs::read_to_string("/config.toml").expect("Configuration file is missing");

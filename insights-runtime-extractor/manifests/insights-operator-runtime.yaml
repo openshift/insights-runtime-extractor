@@ -15,13 +15,18 @@ spec:
     spec:
       serviceAccountName: insights-runtime-extractor-sa
       hostPID: true
-      # You must have create a secret named insights-runtime-extractor-pull-secret to be able to pull the image
-      imagePullSecrets:
-        - name: insights-runtime-extractor-pull-secret 
       containers:
-        - name: insights-runtime-extractor
-          # Replace the image field it is is coming from another image registry
-          image: ghcr.io/jmesnil/insights-runtime-extractor:latest
+        - name: exporter
+          image: alpine:latest
+          command: ['sh', '-c', 'tail -f /dev/null']
+          imagePullPolicy: Always
+          volumeMounts:
+            - mountPath: /data
+              name: data-volume
+        - name: extractor
+          image: quay.io/jmesnil/insights-runtime-extractor:latest
+          args:
+            - /sleep
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
@@ -36,8 +41,12 @@ spec:
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
+            - mountPath: /data
+              name: data-volume
       volumes:
         - name: crio-socket
           hostPath:
             path: /run/crio/crio.sock
             type: Socket
+        - name: data-volume
+          emptyDir: {}
