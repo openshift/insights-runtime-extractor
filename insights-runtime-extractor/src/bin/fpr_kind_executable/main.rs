@@ -24,7 +24,7 @@ fn main() -> io::Result<()> {
             entries.insert(String::from("runtime-kind"), String::from(name));
             entries.insert(String::from("runtime-kind-version"), version);
 
-            file::write_fingerprint(Path::new(&out), "runtime-kind", &entries)
+            file::write_entries(Path::new(&out), "runtime-kind-fingerprints.txt", &entries)
         }
         Err(err) => Err(err),
     }

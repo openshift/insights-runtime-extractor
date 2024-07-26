@@ -31,5 +31,5 @@ fn main() -> io::Result<()> {
     let duration = start.elapsed().as_micros();
     println!("🕑 OS Fingerprint executed in  {:?}μs", duration);
 
-    file::write_fingerprint(Path::new(&out), "os", &entries)
+    file::write_entries(Path::new(&out), "os-fingerprints.txt", &entries)
 }

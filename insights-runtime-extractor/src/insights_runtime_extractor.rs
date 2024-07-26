@@ -90,9 +90,9 @@ pub fn scan_container(config: &Config, out: &String, container: &Container) {
             container.pod_namespace.clone(),
         );
         container_info.insert(String::from("container-id"), container_id.clone());
-        let _ = file::write_fingerprint(
+        let _ = file::write_entries(
             Path::new(&container_output),
-            "container-info",
+            "container-info.txt",
             &container_info,
         );
 

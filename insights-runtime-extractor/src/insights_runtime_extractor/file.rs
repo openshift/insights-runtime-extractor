@@ -142,21 +142,19 @@ pub fn jar_contains_class(jar_path: &PathBuf, class_name: &str) -> bool {
     false
 }
 
-/// Write fingerprints entries to a file in the `out` directory.
-///
-/// The file is named `${prefix}-fingerprints.txt`.
-pub fn write_fingerprint(
+/// Write entries to a file in the `out` directory.
+pub fn write_entries(
     out: &Path,
-    prefix: &str,
+    file_name: &str,
     entries: &HashMap<String, String>,
 ) -> io::Result<()> {
-    if entries.len() == 0 || prefix.len() == 0 {
+    if entries.len() == 0 {
         return Ok(());
     }
 
-    let binding = Path::new(&out).join(format!("{}-fingerprints.txt", prefix));
-    let fingerprint_file = binding.as_path();
-    let mut file = File::create(fingerprint_file)?;
+    let binding = Path::new(&out).join(file_name);
+    let file_path = binding.as_path();
+    let mut file = File::create(file_path)?;
 
     let mut keys: Vec<_> = entries.keys().collect();
     keys.sort();
@@ -167,7 +165,7 @@ pub fn write_fingerprint(
         }
     }
 
-    debug!("📄  Wrote fingerprints file {:?}", fingerprint_file);
+    debug!("📄  Wrote fingerprints file {:?}", file_path);
 
     Ok(())
 }

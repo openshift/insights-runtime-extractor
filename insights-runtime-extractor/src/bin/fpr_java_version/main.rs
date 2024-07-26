@@ -48,5 +48,5 @@ fn main() -> io::Result<()> {
             }
         }
     }
-    file::write_fingerprint(Path::new(&out), "runtime-kind", &entries)
+    file::write_entries(Path::new(&out), "runtime-kind-fingerprints.txt", &entries)
 }

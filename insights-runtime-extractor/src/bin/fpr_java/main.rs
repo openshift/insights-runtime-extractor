@@ -122,5 +122,5 @@ fn main() -> io::Result<()> {
         }
     }
 
-    file::write_fingerprint(Path::new(&out), "java", &entries)
+    file::write_entries(Path::new(&out), "java-fingerprints.txt", &entries)
 }
