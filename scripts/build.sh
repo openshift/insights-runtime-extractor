@@ -4,24 +4,28 @@ fi
 if [[ -z "${TAG}"  ]]; then
   TAG=latest
 fi
-IMG=$IMAGE_REGISTRY/insights-runtime-extractor:$TAG
 
-podman manifest rm $IMG
-podman manifest create $IMG
+for component in "extractor" "exporter" ; do
+  IMG=$IMAGE_REGISTRY/insights-runtime-$component:$TAG
 
-podman build --platform linux/arm64,linux/amd64 --manifest $IMG .
+  podman manifest rm $IMG
+  podman manifest create $IMG
 
-if [ $? -ne 0 ]; then
-  echo "❌ Building image failed"
-  exit 1
-fi
+  podman build --platform linux/arm64,linux/amd64 --manifest $IMG --target=$component .
 
-echo "=========================================================================="
-echo "✅ Building image $IMG"
-echo "=========================================================================="
+  if [ $? -ne 0 ]; then
+    echo "❌ Building image failed"
+    exit 1
+  fi
 
-podman manifest push $IMG
+  echo "=========================================================================="
+  echo "✅ Building image $IMG"
+  echo "=========================================================================="
 
-echo "=========================================================================="
-echo "✅ Pushing image $IMG"
-echo "=========================================================================="
+  podman manifest push $IMG
+
+  echo "=========================================================================="
+  echo "✅ Pushing image $IMG"
+  echo "=========================================================================="done 
+
+done

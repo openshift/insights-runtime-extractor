@@ -25,25 +25,30 @@ RUN make TARGETARCH=${TARGETARCH}
 
 FROM golang:1.22 AS go-builder
 
-WORKDIR /workspace
+WORKDIR /workspace/go-fingerprints
 COPY go-fingerprints .
 
 ARG GO_LDFLAGS=""
-RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o fpr_native_executable -ldflags="${GO_LDFLAGS}" main.go
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o ./fpr_native_executable -ldflags="${GO_LDFLAGS}" main.go
 
-FROM scratch
+WORKDIR /workspace/insights-runtime-exporter
+COPY insights-runtime-exporter .
 
+ARG GO_LDFLAGS=""
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o ./exporter -ldflags="${GO_LDFLAGS}" cmd/exporter/main.go
+
+FROM scratch as extractor
 
 COPY --from=rust-builder /crictl /crictl
-COPY --from=rust-builder /work/target/*/release/sleep /sleep
-COPY --from=rust-builder /work/target/*/release/gather_runtime_infos /gather_runtime_infos
-COPY --from=rust-builder /work/target/*/release/extractor_server /extractor_server
 COPY --from=rust-builder /work/config/ /
-
+COPY --from=rust-builder /work/target/*/release/extractor_server /extractor_server
 # All fingerprints executables are copied to the root directory with other executables
 COPY --from=rust-builder --chmod=755 /work/target/*/release/fpr_* /
-
 # Copy fingerprints written in Go
-COPY --from=go-builder --chmod=755 /workspace/fpr_* /
-
+COPY --from=go-builder --chmod=755 /workspace/go-fingerprints/fpr_* /
 ENTRYPOINT [ "/extractor_server" ]
+
+FROM scratch as exporter
+
+COPY --from=go-builder /workspace/insights-runtime-exporter/exporter /
+ENTRYPOINT [ "/exporter" ]
