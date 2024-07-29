@@ -8,3 +8,6 @@ build: clean
 
 test: build
 	go test -v ./...
+
+run: build
+	./exporter
