@@ -9,28 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"insights-runtime-exporter/pkg/types"
+	"insights-runtime-exporter/pkg/utils"
 )
-
-type nodeRuntimeInfo map[string]namespaceRuntimeInfo
-type namespaceRuntimeInfo map[string]podRuntimeInfo
-type podRuntimeInfo map[string]containerRuntimeInfo
-
-// containerRuntimeInfo represents workload info returned by the insights-runtime-extractor component.
-type containerRuntimeInfo struct {
-	OSReleaseID            string             `json:"os-release-id,omitempty"`
-	OSReleaseVersionID     string             `json:"os-release-version-id,omitempty"`
-	RuntimeKind            string             `json:"runtime-kind,omitempty"`
-	RuntimeKindVersion     string             `json:"runtime-kind-version,omitempty"`
-	RuntimeKindImplementer string             `json:"runtime-kind-implementer,omitempty"`
-	Runtimes               []RuntimeComponent `json:"runtimes,omitempty"`
-}
-
-type RuntimeComponent struct {
-	// Name of a runtime used to run the application in the container
-	Name string `json:"name,omitempty"`
-	// The version of this runtime
-	Version string `json:"version,omitempty"`
-}
 
 // gatherRuntimeInfo will trigger a new extraction of runtime info
 // and reply with a JSON payload
@@ -77,9 +59,9 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 	// remove the dataPath directory
 }
 
-func collect_workload_payload(dataPath string) (nodeRuntimeInfo, error) {
+func collect_workload_payload(dataPath string) (types.NodeRuntimeInfo, error) {
 	// create a map with the key being "${pod-namespace}-${pod-name}-${container-id}"
-	payload := make(nodeRuntimeInfo)
+	payload := make(types.NodeRuntimeInfo)
 
 	fmt.Printf("Reading data from |%s|\n", dataPath)
 	// Read all directory entries (1 per running container)
@@ -92,7 +74,7 @@ func collect_workload_payload(dataPath string) (nodeRuntimeInfo, error) {
 			containerDir := filepath.Join(dataPath, entry.Name())
 
 			// read the file container-info.txt to get the pod-name, pod-namespace, container-id fields
-			info, exists := readPropertiesFile(filepath.Join(containerDir, "container-info.txt"))
+			info, exists := utils.ReadPropertiesFile(filepath.Join(containerDir, "container-info.txt"))
 			if !exists {
 				continue
 			}
@@ -102,14 +84,14 @@ func collect_workload_payload(dataPath string) (nodeRuntimeInfo, error) {
 
 			fmt.Println("Reading info for container:", namespace, podName, containerID)
 
-			runtimeInfo := containerRuntimeInfo{}
+			runtimeInfo := types.ContainerRuntimeInfo{}
 			osFingerprintPath := filepath.Join(containerDir, "os.txt")
-			if info, exists := readPropertiesFile(osFingerprintPath); exists {
+			if info, exists := utils.ReadPropertiesFile(osFingerprintPath); exists {
 				runtimeInfo.OSReleaseID = info["os-release-id"]
 				runtimeInfo.OSReleaseVersionID = info["os-release-version-id"]
 			}
 			runtimeKindPath := filepath.Join(containerDir, "runtime-kind.txt")
-			if info, exists := readPropertiesFile(runtimeKindPath); exists {
+			if info, exists := utils.ReadPropertiesFile(runtimeKindPath); exists {
 				runtimeInfo.RuntimeKind = info["runtime-kind"]
 				runtimeInfo.RuntimeKindVersion = info["runtime-kind-version"]
 				runtimeInfo.RuntimeKindImplementer = info["runtime-kind-implementer"]
@@ -121,13 +103,13 @@ func collect_workload_payload(dataPath string) (nodeRuntimeInfo, error) {
 				continue
 			}
 
-			var runtimes []RuntimeComponent
+			var runtimes []types.RuntimeComponent
 
 			for _, file := range entries {
 				if !file.IsDir() && strings.HasSuffix(file.Name(), "-fingerprints.txt") {
-					if info, exists := readPropertiesFile(filepath.Join(containerDir, file.Name())); exists {
+					if info, exists := utils.ReadPropertiesFile(filepath.Join(containerDir, file.Name())); exists {
 						for k, v := range info {
-							runtimes = append(runtimes, RuntimeComponent{
+							runtimes = append(runtimes, types.RuntimeComponent{
 								Name:    k,
 								Version: v,
 							})
@@ -139,70 +121,17 @@ func collect_workload_payload(dataPath string) (nodeRuntimeInfo, error) {
 
 			if _, exists := payload[namespace]; !exists {
 				fmt.Println("create entry for namespace", namespace)
-				payload[namespace] = make(namespaceRuntimeInfo)
+				payload[namespace] = make(types.NamespaceRuntimeInfo)
 			}
 			if _, exists := payload[namespace][podName]; !exists {
 				fmt.Println("create entry for namespace pod", namespace, podName)
-				payload[namespace][podName] = make(podRuntimeInfo)
+				payload[namespace][podName] = make(types.PodRuntimeInfo)
 			}
 			payload[namespace][podName][containerID] = runtimeInfo
 		}
 	}
 
 	return payload, nil
-}
-
-func readPropertiesFile(filePath string) (map[string]string, bool) {
-	_, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		// File does not exist
-		return nil, false
-	}
-
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, false
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	properties := make(map[string]string)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.HasPrefix(line, "#") || strings.TrimSpace(line) == "" {
-			continue
-		}
-
-		// Split the line into key and value
-		parts := strings.SplitN(line, "=", 2)
-		if len(parts) == 2 {
-			key := strings.TrimSpace(parts[0])
-			value := strings.TrimSpace(parts[1])
-			properties[key] = value
-		}
-	}
-
-	// Check for scanner errors
-	if err := scanner.Err(); err != nil {
-		return nil, false
-	}
-
-	return properties, true
-}
-
-func readFfileExists(path string) bool {
-	_, err := os.Stat(path)
-	if err == nil {
-		// File exists
-		return true
-	}
-	if os.IsNotExist(err) {
-		// File does not exist
-		return false
-	}
-	// Some other error occurred
-	return false
 }
 
 func main() {
