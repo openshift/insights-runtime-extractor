@@ -1,11 +1,11 @@
 use clap::Parser;
-use log::{error, info};
+use log::{debug, error, info};
 use std::fs;
-use tempfile::Builder;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
 
-use insights_runtime_extractor::{config, perms};
+use insights_runtime_extractor::{config, file, perms};
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -22,7 +22,7 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
-    let log_level = args.log_level.unwrap_or(String::from("warn"));
+    let log_level = args.log_level.unwrap_or(String::from("info"));
 
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
 
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a TCP listener
     let listener = TcpListener::bind(&addr).await?;
 
-    println!("Listening on {}", addr);
+    info!("Listening on {}", addr);
 
     loop {
         // Accept an incoming connection
@@ -50,25 +50,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Spawn a new task to handle the connection
         tokio::spawn(async move {
-            let exec_dir = Builder::new()
-                .prefix("out")
-                .rand_bytes(6)
-                .tempdir_in("/data/")
-                .expect("Can not create execution directory");
+            debug!("Trigger new runtime info extraction");
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Get Unix timestamp")
+                .subsec_nanos();
 
-            // use a relative path for the execution directory as the
-            // fingerprints will add files from the orphaned directory
-            let relative_exec_dir = exec_dir
-                .path()
-                .strip_prefix("/")
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string();
+            let exec_dir = format!("data/out-{}", timestamp);
+            file::create_dir(exec_dir.as_str()).expect("Can not create execution directory");
 
             info!(
                 "Scanning all containers in execution directory {}",
-                &relative_exec_dir
+                &exec_dir
             );
 
             let config = config::get_config("/");
@@ -76,13 +69,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             for container in containers {
                 info!("Scanning container 🫙 {}", container.id);
-                insights_runtime_extractor::scan_container(&config, &relative_exec_dir, &container)
+                insights_runtime_extractor::scan_container(&config, &exec_dir, &container)
             }
 
-            let response = format!("{}", &exec_dir.path().display());
-
             // Write the response message to the socket
-            if let Err(e) = socket.write_all(response.as_bytes()).await {
+            if let Err(e) = socket.write_all(exec_dir.as_bytes()).await {
                 error!("Failed to write to socket; err = {:?}", e);
             }
             // Close the socket
