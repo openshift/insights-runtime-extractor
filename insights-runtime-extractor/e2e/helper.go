@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
@@ -39,13 +40,17 @@ func newAppDeployment(namespace string, name string, replicas int32, containerNa
 	}
 }
 
-func getContainerIDAndWorkerNode(ctx context.Context, c *envconf.Config, g *Ω.WithT, namespace string, selector string, containerName string) (string, string) {
+func getContainerIDAndWorkerNode(ctx context.Context, c *envconf.Config, g *Ω.WithT, namespace string, selector string, containerName string) (namespacedContainerId, string) {
 	pod := getPod(ctx, c, g, namespace, selector)
 	g.Expect(len(pod.Status.ContainerStatuses)).Should(Ω.Equal(1))
 	container := pod.Status.ContainerStatuses[0]
 	g.Expect(container.Name).Should(Ω.Equal(containerName))
 
-	return container.ContainerID, pod.Spec.NodeName
+	return namespacedContainerId{
+		namespace:   namespace,
+		podName:     pod.ObjectMeta.Name,
+		containerId: strings.TrimPrefix(container.ContainerID, "cri-o://"),
+	}, pod.Spec.NodeName
 }
 
 func getPod(ctx context.Context, c *envconf.Config, g *Ω.WithT, namespace string, selector string) corev1.Pod {
@@ -144,22 +149,36 @@ func getInsightsOperatorRuntimePodIPs(
 	return pods, nil
 }
 
-// workloadNamespacePods tracks the identified pod shapes within a namespace.
-type runtimeWorkloadInfo struct {
-	Name    string `json:"name"`
+// ContainerRuntimeInfo represents workload info returned by the insights-runtime-extractor component.
+type ContainerRuntimeInfo struct {
+	// Hash of the identifier of the Operating System (based on /etc/os-release ID)
+	Os string `json:"os,omitempty"`
+	// Hash of the version identifier of the Operating System (based on /etc/os-release VERSION_ID)
+	OsVersion string `json:"osVersion,omitempty"`
+	// Identifier of the kind of runtime
+	Kind string `json:"kind,omitempty"`
+	// Version of the kind of runtime
+	KindVersion string `json:"kindVersion,omitempty"`
+	// Entity that provides the runtime-kind implementation
+	KindImplementer string `json:"kindImplementer,omitempty"`
+	// Runtimes components
+	Runtimes []RuntimeComponent `json:"runtimes,omitempty"`
+}
+
+type RuntimeComponent struct {
+	// Name of a runtime used to run the application in the container
+	Name string `json:"name,omitempty"`
+	// The version of this runtime
 	Version string `json:"version,omitempty"`
 }
 
-type workloadInfo struct {
-	OsReleaseId            string                `json:"os-release-id,omitempty"`
-	OsReleaseVersionId     string                `json:"os-release-version-id,omitempty"`
-	RuntimeKind            string                `json:"runtime-kind,omitempty"`
-	RuntimeKindVersion     string                `json:"runtime-kind-version,omitempty"`
-	RuntimeKindImplementer string                `json:"runtime-kind-implementer,omitempty"`
-	Runtimes               []runtimeWorkloadInfo `json:"runtimes,omitempty"`
+type namespacedContainerId struct {
+	namespace   string
+	podName     string
+	containerId string
 }
 
-func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid string, nodeName string) (workloadInfo, error) {
+func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid namespacedContainerId, nodeName string) ContainerRuntimeInfo {
 	client, err := c.NewClient()
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
@@ -169,30 +188,20 @@ func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid stri
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
 	var stdout, stderr bytes.Buffer
-	command := []string{"curl", "-s", "http://" + containerScannerPodIPs[nodeName] + ":8000/gather_runtime_info?cid=" + cid}
+	command := []string{"curl", "-s", "http://" + containerScannerPodIPs[nodeName] + ":8000/gather-runtime-info?hash=false"}
 
 	err = client.Resources().ExecInPod(ctx, insightsOperatorRuntimeNamespace, curlPodName, "curl", command, &stdout, &stderr)
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 	g.Expect(stderr.String()).Should(Ω.BeEmpty())
 
 	output := stdout.String()
-	fmt.Printf("Got output %s\n", output)
 	g.Expect(output).Should(Ω.Not(Ω.BeEmpty()))
 
-	var scanOutput map[string]map[string]map[string]workloadInfo
+	var scanOutput map[string]map[string]map[string]ContainerRuntimeInfo
 	json.Unmarshal([]byte(output), &scanOutput)
 
-	fmt.Printf("Got scan output %s\n", scanOutput)
+	container := scanOutput[cid.namespace][cid.podName][cid.containerId]
+	fmt.Println("got scanner result:", container)
 
-	g.Expect(scanOutput).To(Ω.HaveKey(namespace))
-
-	scanNamespace, _ := scanOutput[namespace]
-	g.Expect(len(scanNamespace)).Should(Ω.Equal(1))
-	for _, scanPod := range scanNamespace {
-		g.Expect(scanPod).To(Ω.HaveKey(cid))
-		containerScan := scanPod[cid]
-		return containerScan, nil
-	}
-
-	return workloadInfo{}, fmt.Errorf("unable to scan container %s", cid)
+	return container
 }

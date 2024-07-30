@@ -33,14 +33,14 @@ func TestNodeJS(t *testing.T) {
 		Assess("is scanned", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			g := Ω.NewWithT(t)
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result, err := scanContainer(ctx, g, c, cid, nodeName)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			result := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.OsReleaseId).Should(Ω.Equal("debian"))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("12"))
-			g.Expect(result.RuntimeKind).Should(Ω.Equal("Node.js"))
-			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("v18.19.1"))
-			g.Expect(result.RuntimeKindImplementer).Should(Ω.BeEmpty())
+			g.Expect(result.Os).Should(Ω.Equal("debian"))
+			g.Expect(result.OsVersion).Should(Ω.Equal("12"))
+			g.Expect(result.Kind).Should(Ω.Equal("Node.js"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("v18.19.1"))
+			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
 
 			return ctx
 		})

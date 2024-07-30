@@ -13,7 +13,8 @@ func TestTomcat(t *testing.T) {
 
 	appName := "upstream-tomcat"
 	containerName := "c1"
-	image := "tomcat:11.0-jre21"
+	// Tomcat image that corresponded to 11.0-jre21
+	image := "tomcat@sha256:3b353d4a30c315ae1177b04642c932e07fcd87155452629d4809c38d9854de72"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Tomcat from base image "+image).
@@ -35,19 +36,19 @@ func TestTomcat(t *testing.T) {
 			g := Ω.NewWithT(t)
 
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result, err := scanContainer(ctx, g, c, cid, nodeName)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			result := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.OsReleaseId).Should(Ω.Equal("ubuntu"))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("22.04"))
-			g.Expect(result.RuntimeKind).Should(Ω.Equal("Java"))
-			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("21.0.3"))
-			g.Expect(result.RuntimeKindImplementer).Should(Ω.Equal("Eclipse Adoptium"))
+			g.Expect(result.Os).Should(Ω.Equal("ubuntu"))
+			g.Expect(result.OsVersion).Should(Ω.Equal("24.04"))
+			g.Expect(result.Kind).Should(Ω.Equal("Java"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("21.0.4"))
+			g.Expect(result.KindImplementer).Should(Ω.Equal("Eclipse Adoptium"))
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
 			runtime := result.Runtimes[0]
 			g.Expect(runtime.Name).To(Ω.Equal("Apache Tomcat"))
-			g.Expect(runtime.Version).To(Ω.Equal("11.0.0-M21"))
+			g.Expect(runtime.Version).To(Ω.Equal("11.0.0-M22"))
 
 			return ctx
 		})
@@ -80,14 +81,14 @@ func TestJBossWebServer(t *testing.T) {
 			g := Ω.NewWithT(t)
 
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result, err := scanContainer(ctx, g, c, cid, nodeName)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			result := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.OsReleaseId).Should(Ω.Equal("rhel"))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("8.10"))
-			g.Expect(result.RuntimeKind).Should(Ω.Equal("Java"))
-			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("17.0.11"))
-			g.Expect(result.RuntimeKindImplementer).Should(Ω.Equal("Red Hat, Inc."))
+			g.Expect(result.Os).Should(Ω.Equal("rhel"))
+			g.Expect(result.OsVersion).Should(Ω.Equal("8.10"))
+			g.Expect(result.Kind).Should(Ω.Equal("Java"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("17.0.11"))
+			g.Expect(result.KindImplementer).Should(Ω.Equal("Red Hat, Inc."))
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
 			runtime := result.Runtimes[0]

@@ -35,14 +35,14 @@ func TestQuarkus(t *testing.T) {
 			g := Ω.NewWithT(t)
 
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result, err := scanContainer(ctx, g, c, cid, nodeName)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			result := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.OsReleaseId).Should(Ω.Equal("rhel"))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("8.8"))
-			g.Expect(result.RuntimeKind).Should(Ω.Equal("Java"))
-			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("17.0.8"))
-			g.Expect(result.RuntimeKindImplementer).Should(Ω.Equal("Red Hat, Inc."))
+			g.Expect(result.Os).Should(Ω.Equal("rhel"))
+			g.Expect(result.OsVersion).Should(Ω.Equal("8.8"))
+			g.Expect(result.Kind).Should(Ω.Equal("Java"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("17.0.8"))
+			g.Expect(result.KindImplementer).Should(Ω.Equal("Red Hat, Inc."))
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
 			runtime := result.Runtimes[0]
@@ -80,14 +80,14 @@ func TestQuarkusNative(t *testing.T) {
 			g := Ω.NewWithT(t)
 
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result, err := scanContainer(ctx, g, c, cid, nodeName)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			result := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.OsReleaseId).Should(Ω.Equal("debian"))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("11"))
-			g.Expect(result.RuntimeKind).Should(Ω.Equal("GraalVM"))
-			g.Expect(result.RuntimeKindVersion).Should(Ω.BeEmpty())
-			g.Expect(result.RuntimeKindImplementer).Should(Ω.BeEmpty())
+			g.Expect(result.Os).Should(Ω.Equal("debian"))
+			g.Expect(result.OsVersion).Should(Ω.Equal("11"))
+			g.Expect(result.Kind).Should(Ω.Equal("GraalVM"))
+			g.Expect(result.KindVersion).Should(Ω.BeEmpty())
+			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
 			runtime := result.Runtimes[0]

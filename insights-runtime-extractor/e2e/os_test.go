@@ -27,7 +27,7 @@ func TestCentOs7(t *testing.T) {
 	testBaseImage(t, "centos:7", "centos", "7")
 }
 
-func testBaseImage(t *testing.T, baseImage string, expectedOsReleaseId string, expectedOsReleaseVersionId string) {
+func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOsVersion string) {
 
 	appName := envconf.RandomName("os", 10)
 	containerName := "main"
@@ -49,14 +49,14 @@ func testBaseImage(t *testing.T, baseImage string, expectedOsReleaseId string, e
 		Assess("is scanned", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			g := Ω.NewWithT(t)
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result, err := scanContainer(ctx, g, c, cid, nodeName)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			result := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.OsReleaseId).Should(Ω.Equal(expectedOsReleaseId))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal(expectedOsReleaseVersionId))
-			g.Expect(result.RuntimeKind).Should(Ω.BeEmpty())
-			g.Expect(result.RuntimeKindVersion).Should(Ω.BeEmpty())
-			g.Expect(result.RuntimeKindImplementer).Should(Ω.BeEmpty())
+			g.Expect(result.Os).Should(Ω.Equal(expectedOs))
+			g.Expect(result.OsVersion).Should(Ω.Equal(expectedOsVersion))
+			g.Expect(result.Kind).Should(Ω.BeEmpty())
+			g.Expect(result.KindVersion).Should(Ω.BeEmpty())
+			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(0))
 

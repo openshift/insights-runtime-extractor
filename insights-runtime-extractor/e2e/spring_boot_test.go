@@ -35,14 +35,14 @@ func TestSpringBoot(t *testing.T) {
 			g := Ω.NewWithT(t)
 
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result, err := scanContainer(ctx, g, c, cid, nodeName)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
+			result := scanContainer(ctx, g, c, cid, nodeName)
+			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.OsReleaseId).Should(Ω.Equal("ol"))
-			g.Expect(result.OsReleaseVersionId).Should(Ω.Equal("8.5"))
-			g.Expect(result.RuntimeKind).Should(Ω.Equal("Java"))
-			g.Expect(result.RuntimeKindVersion).Should(Ω.Equal("17.0.2"))
-			g.Expect(result.RuntimeKindImplementer).Should(Ω.Equal("Oracle Corporation"))
+			g.Expect(result.Os).Should(Ω.Equal("ol"))
+			g.Expect(result.OsVersion).Should(Ω.Equal("8.5"))
+			g.Expect(result.Kind).Should(Ω.Equal("Java"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("17.0.2"))
+			g.Expect(result.KindImplementer).Should(Ω.Equal("Oracle Corporation"))
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
 			runtime := result.Runtimes[0]

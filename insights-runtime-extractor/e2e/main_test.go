@@ -18,8 +18,10 @@ var (
 	insightsOperatorRuntimeNamespace string
 	// namespace is the namespace where workloads are deployed before they are scanned
 	namespace string
-	// testedImage is the URL of the image for the insights-runtime-extractor
-	testedImage string
+	// testedExtractorImage is the URL of the image for the insights-runtime-extractor's extractor
+	testedExtractorImage string
+	// testedExporterImage is the URL of the image for the insights-runtime-extractor's exporter
+	testedExporterImage string
 )
 
 func TestMain(m *testing.M) {
@@ -27,9 +29,13 @@ func TestMain(m *testing.M) {
 	testEnv = env.NewWithConfig(cfg)
 	namespace = envconf.RandomName("e2e", 10)
 	insightsOperatorRuntimeNamespace = os.Getenv("TEST_NAMESPACE")
-	testedImage = "ghcr.io/jmesnil/insights-runtime-extractor:latest"
-	if value, ok := os.LookupEnv("TESTED_IMAGE"); ok {
-		testedImage = value
+	testedExtractorImage = "quay.io/jmesnil/insights-runtime-extractor:latest"
+	if value, ok := os.LookupEnv("TESTED_EXTRACTOR_IMAGE"); ok {
+		testedExtractorImage = value
+	}
+	testedExporterImage = "quay.io/jmesnil/insights-runtime-exporter:latest"
+	if value, ok := os.LookupEnv("TESTED_EXPORTER_IMAGE"); ok {
+		testedExporterImage = value
 	}
 
 	insightsOperatorRuntime := newContainerScannerDaemonSet()
@@ -67,8 +73,8 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 					ServiceAccountName: "insights-runtime-extractor-sa",
 					HostPID:            true,
 					Containers: []corev1.Container{{
-						Name:            "insights-runtime-extractor",
-						Image:           testedImage,
+						Name:            "extractor",
+						Image:           testedExtractorImage,
 						ImagePullPolicy: corev1.PullAlways,
 						Env: []corev1.EnvVar{{
 							Name:  "CONTAINER_RUNTIME_ENDPOINT",
@@ -83,6 +89,17 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 						VolumeMounts: []corev1.VolumeMount{{
 							MountPath: "/crio.sock",
 							Name:      "crio-socket",
+						}, {
+							MountPath: "/data",
+							Name:      "data-volume",
+						}},
+					}, {
+						Name:            "exporter",
+						Image:           testedExporterImage,
+						ImagePullPolicy: corev1.PullAlways,
+						VolumeMounts: []corev1.VolumeMount{{
+							MountPath: "/data",
+							Name:      "data-volume",
 						}},
 					}},
 					Volumes: []corev1.Volume{{
@@ -91,8 +108,13 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 							HostPath: &corev1.HostPathVolumeSource{
 								Path: "/run/crio/crio.sock",
 								Type: &hostPathSocket,
-							},
-						}}},
+							}},
+					}, {
+						Name: "data-volume",
+						VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					}},
 				},
 			},
 		},
