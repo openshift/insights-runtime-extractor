@@ -19,36 +19,39 @@ RUN bash -c 'if [ "$TARGETARCH" == "arm64" ]; then dnf -y install gcc-aarch64-li
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN bash -c 'if [ "$TARGETARCH" == "arm64" ]; then rustup target install aarch64-unknown-linux-musl ; else rustup target install x86_64-unknown-linux-musl; fi'
-WORKDIR /work
-COPY insights-runtime-extractor /work
+WORKDIR /workspace/insights-runtime-extractor
+COPY insights-runtime-extractor .
 RUN make TARGETARCH=${TARGETARCH}
 
 FROM golang:1.22 AS go-builder
+# FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.22-openshift-4.17 AS go-builder
 
 WORKDIR /workspace/go-fingerprints
 COPY go-fingerprints .
-
 ARG GO_LDFLAGS=""
-RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o ./fpr_native_executable -ldflags="${GO_LDFLAGS}" main.go
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
 
 WORKDIR /workspace/insights-runtime-exporter
 COPY insights-runtime-exporter .
-
 ARG GO_LDFLAGS=""
-RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on go build -a -o ./exporter -ldflags="${GO_LDFLAGS}" cmd/exporter/main.go
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
 
+# Target image for the extractor component
 FROM scratch as extractor
 
 COPY --from=rust-builder /crictl /crictl
-COPY --from=rust-builder /work/config/ /
-COPY --from=rust-builder /work/target/*/release/extractor_server /extractor_server
+COPY --from=rust-builder /workspace/insights-runtime-extractor/config/ /
+COPY --from=rust-builder /workspace/insights-runtime-extractor/target/*/release/extractor_server /extractor_server
 # All fingerprints executables are copied to the root directory with other executables
-COPY --from=rust-builder --chmod=755 /work/target/*/release/fpr_* /
+COPY --from=rust-builder --chmod=755 /workspace/insights-runtime-extractor/target/*/release/fpr_* /
 # Copy fingerprints written in Go
-COPY --from=go-builder --chmod=755 /workspace/go-fingerprints/fpr_* /
-ENTRYPOINT [ "/extractor_server" ]
+COPY --from=go-builder --chmod=755 /workspace/go-fingerprints/bin/fpr_* /
+ENTRYPOINT [ "/extractor_server", "--log-level=trace" ]
 
-FROM scratch as exporter
+# Target image for the exporter component
 
-COPY --from=go-builder /workspace/insights-runtime-exporter/exporter /
+#FROM scratch as exporter
+FROM registry.access.redhat.com/ubi9-minimal as exporter
+
+COPY --from=go-builder /workspace/insights-runtime-exporter/bin/exporter /
 ENTRYPOINT [ "/exporter" ]

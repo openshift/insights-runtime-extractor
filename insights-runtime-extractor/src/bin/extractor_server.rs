@@ -68,18 +68,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let containers = insights_runtime_extractor::get_containers();
 
             for container in containers {
-                info!("Scanning container 🫙 {}", container.id);
+                info!(
+                    "Scanning container 🫙 {} in {}/{}",
+                    container.id, container.pod_namespace, container.pod_name
+                );
                 insights_runtime_extractor::scan_container(&config, &exec_dir, &container)
             }
 
+            info!(
+                "Scanning DONE. Sending back the path to the execution directory {}",
+                &exec_dir
+            );
+
+            let response = format!("{}\n", &exec_dir);
             // Write the response message to the socket
-            if let Err(e) = socket.write_all(exec_dir.as_bytes()).await {
+            if let Err(e) = socket.write_all(response.as_bytes()).await {
                 error!("Failed to write to socket; err = {:?}", e);
             }
             // Close the socket
             if let Err(e) = socket.shutdown().await {
                 error!("Failed to shutdown socket; err = {:?}", e);
             }
+
+            info!("DONE");
         });
     }
 }

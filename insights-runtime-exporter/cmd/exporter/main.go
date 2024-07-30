@@ -2,16 +2,16 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"insights-runtime-exporter/pkg/types"
+	"insights-runtime-exporter/pkg/utils"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"insights-runtime-exporter/pkg/types"
-	"insights-runtime-exporter/pkg/utils"
 )
 
 const (
@@ -26,7 +26,10 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dataPath, err := trigger_runtime_info_extraction()
+	hashParam := r.URL.Query().Get("hash")
+	hash := hashParam == "" || hashParam == "true"
+
+	dataPath, err := triggerRuntimeInfoExtraction()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -39,7 +42,7 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 	defer os.RemoveAll(dataPath)
 	fmt.Println("Reading runtime info data from :", dataPath)
 
-	payload, err := collect_workload_payload(dataPath)
+	payload, err := collectWorkloadPayload(hash, dataPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -55,13 +58,14 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func trigger_runtime_info_extraction() (string, error) {
+func triggerRuntimeInfoExtraction() (string, error) {
 	conn, err := net.Dial("tcp", EXTRACTOR_ADDRESS)
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
 
+	fmt.Println("Trigger new runtime extraction")
 	// write to TCP connection to trigger a runtime extraction
 	fmt.Fprintf(conn, "")
 
@@ -72,9 +76,10 @@ func trigger_runtime_info_extraction() (string, error) {
 	return strings.TrimSpace(dataPath), nil
 }
 
-func collect_workload_payload(dataPath string) (types.NodeRuntimeInfo, error) {
-	// create a map with the key being "${pod-namespace}-${pod-name}-${container-id}"
+func collectWorkloadPayload(hash bool, dataPath string) (types.NodeRuntimeInfo, error) {
 	payload := make(types.NodeRuntimeInfo)
+
+	h := sha256.New()
 
 	// Read all directory entries (1 per running container)
 	entries, err := os.ReadDir(dataPath)
@@ -100,16 +105,18 @@ func collect_workload_payload(dataPath string) (types.NodeRuntimeInfo, error) {
 		fmt.Println("Reading info for container:", namespace, podName, containerID)
 
 		runtimeInfo := types.ContainerRuntimeInfo{}
+		// read the file os.txt to get the Operating System fingerprint
 		osFingerprintPath := filepath.Join(containerDir, "os.txt")
 		if info, exists := utils.ReadPropertiesFile(osFingerprintPath); exists {
-			runtimeInfo.OSReleaseID = info["os-release-id"]
-			runtimeInfo.OSReleaseVersionID = info["os-release-version-id"]
+			runtimeInfo.OSReleaseID = utils.HashString(hash, h, info["os-release-id"])
+			runtimeInfo.OSReleaseVersionID = utils.HashString(hash, h, info["os-release-version-id"])
 		}
+		// read the file runtime-kind.txt to get the Runtime Kind fingerprint
 		runtimeKindPath := filepath.Join(containerDir, "runtime-kind.txt")
 		if info, exists := utils.ReadPropertiesFile(runtimeKindPath); exists {
-			runtimeInfo.RuntimeKind = info["runtime-kind"]
-			runtimeInfo.RuntimeKindVersion = info["runtime-kind-version"]
-			runtimeInfo.RuntimeKindImplementer = info["runtime-kind-implementer"]
+			runtimeInfo.RuntimeKind = utils.HashString(hash, h, info["runtime-kind"])
+			runtimeInfo.RuntimeKindVersion = utils.HashString(hash, h, info["runtime-kind-version"])
+			runtimeInfo.RuntimeKindImplementer = utils.HashString(hash, h, info["runtime-kind-implementer"])
 		}
 
 		if _, exists := payload[namespace]; !exists {
@@ -131,8 +138,8 @@ func collect_workload_payload(dataPath string) (types.NodeRuntimeInfo, error) {
 				if info, exists := utils.ReadPropertiesFile(filepath.Join(containerDir, file.Name())); exists {
 					for k, v := range info {
 						runtimes = append(runtimes, types.RuntimeComponent{
-							Name:    k,
-							Version: v,
+							Name:    utils.HashString(hash, h, k),
+							Version: utils.HashString(hash, h, v),
 						})
 					}
 				}

@@ -13,9 +13,7 @@ impl FingerPrint for NativeExecutable {
         out_dir: &String,
         process: &ContainerProcess,
     ) -> Option<Vec<String>> {
-        debug!("Checking if {:#?} is a native executable", {
-            &process.name
-        });
+        debug!("Checking if {} is a native executable", &process.name);
 
         let fpr_kind_executable = String::from("./fpr_native_executable");
 

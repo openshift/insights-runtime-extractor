@@ -14,8 +14,8 @@ impl FingerPrint for VersionExecutable {
         process: &ContainerProcess,
     ) -> Option<Vec<String>> {
         debug!(
-            "Checking if {:#?} is an executable with that has a `--version`",
-            { &process.name }
+            "Checking if {} is an executable with that has a `--version`",
+            &process.name
         );
 
         let fpr_kind_executable = String::from("./fpr_kind_executable");

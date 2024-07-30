@@ -17,8 +17,7 @@ spec:
       hostPID: true
       containers:
         - name: exporter
-          image: alpine:latest
-          command: ['sh', '-c', 'tail -f /dev/null']
+          image: quay.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
           volumeMounts:
             - mountPath: /data
