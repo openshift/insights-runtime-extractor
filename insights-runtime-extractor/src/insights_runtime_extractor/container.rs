@@ -1,4 +1,4 @@
-use log::info;
+use log::{debug, info};
 use serde_json::Value;
 use std::process::Command;
 
@@ -78,7 +78,7 @@ pub fn get_containers() -> Vec<Container> {
         .expect("List containers with crictl");
     let json = String::from_utf8(output.stdout).unwrap();
 
-    info!("🔎 json={}", &json);
+    debug!("🔎 json={}", &json);
 
     let deserialized_containers: Value = serde_json::from_str(&json).unwrap();
 
