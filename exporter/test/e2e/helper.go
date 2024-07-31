@@ -167,7 +167,7 @@ func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid name
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
 	var stdout, stderr bytes.Buffer
-	command := []string{"curl", "-s", "http://" + containerScannerPodIPs[nodeName] + ":8000/gather-runtime-info?hash=false"}
+	command := []string{"curl", "-s", "http://" + containerScannerPodIPs[nodeName] + ":8000/gather_runtime_info?hash=false"}
 
 	err = client.Resources().ExecInPod(ctx, insightsOperatorRuntimeNamespace, curlPodName, "curl", command, &stdout, &stderr)
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())

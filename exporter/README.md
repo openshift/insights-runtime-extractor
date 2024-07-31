@@ -2,7 +2,7 @@
 
 The `exporter` is a HTTP server that acts as the façade for the insights-runtime-extractor.
 
-Upon request of a `GET /gather-runtime-info`, it opens a TCP connection to the `extractor` (running on `127.0.0.1:3000`)
+Upon request of a `GET /gather_runtime_info`, it opens a TCP connection to the `extractor` (running on `127.0.0.1:3000`)
 The `extractor` replies with a directory path that contains the raw runtime information.
 The `exporter` reads files in that directory and generates a JSON payload that is sent back with the HTTP response.
 It then deletes the directory that it read from.
@@ -28,7 +28,7 @@ sequenceDiagram
 
 Note over exporter: HTTP server listening on :8000
 Note over extractor: TCP server bound to 127.0.0.1:3000
-http-client->>exporter: GET /gather-runtime-info
+http-client->>exporter: GET /gather_runtime_info
 activate exporter
 exporter->>extractor: TCP connection to trigger the extractor
 activate extractor

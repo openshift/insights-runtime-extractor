@@ -152,7 +152,7 @@ func collectWorkloadPayload(hash bool, dataPath string) (types.NodeRuntimeInfo, 
 }
 
 func main() {
-	http.HandleFunc("/gather-runtime-info", gatherRuntimeInfo)
+	http.HandleFunc("/gather_runtime_info", gatherRuntimeInfo)
 
 	log.Println("Starting exporter HTTP server at port 8000")
 	if err := http.ListenAndServe(":8000", nil); err != nil {
