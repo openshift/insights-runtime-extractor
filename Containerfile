@@ -42,6 +42,7 @@ FROM scratch as extractor
 COPY --from=rust-builder /crictl /crictl
 COPY --from=rust-builder /workspace/extractor/config/ /
 COPY --from=rust-builder /workspace/extractor/target/*/release/extractor_server /extractor_server
+COPY --from=rust-builder /workspace/extractor/target/*/release/coordinator /coordinator
 # All fingerprints executables are copied to the root directory with other executables
 COPY --from=rust-builder --chmod=755 /workspace/extractor/target/*/release/fpr_* /
 # Copy fingerprints written in Go

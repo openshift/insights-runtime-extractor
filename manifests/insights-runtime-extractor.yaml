@@ -15,6 +15,9 @@ spec:
     spec:
       serviceAccountName: insights-runtime-extractor-sa
       hostPID: true
+      # Deploy the insights-runtime-extractor only on Linux worker nodes
+      nodeSelector:
+        kubernetes.io/os: linux
       containers:
         - name: exporter
           image: quay.io/jmesnil/insights-runtime-exporter:latest

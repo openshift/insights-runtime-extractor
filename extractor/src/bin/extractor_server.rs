@@ -1,11 +1,12 @@
 use clap::Parser;
 use log::{debug, error, info};
 use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::io::AsyncWriteExt;
-use tokio::net::TcpListener;
+use std::io::Write;
+use std::net::{Shutdown, TcpListener, TcpStream};
+use std::process::Command;
+use std::thread;
 
-use insights_runtime_extractor::{config, file, perms};
+use insights_runtime_extractor::{config, perms};
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -18,8 +19,7 @@ struct Args {
     log_level: Option<String>,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     let args = Args::parse();
 
     let log_level = args.log_level.unwrap_or(String::from("info"));
@@ -35,62 +35,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Configuration:\n----\n{}\n----", config_content);
     config::get_config("/");
 
+    // Create a TCP listener
     // bound to the loopback address so that it can only be contacted
     // by containers in the same pod
-    let addr = "127.0.0.1:3000".to_string();
-
-    // Create a TCP listener
-    let listener = TcpListener::bind(&addr).await?;
+    let addr = "127.0.0.1:3000";
+    let listener = TcpListener::bind(addr).expect("Failed to bind to address");
 
     info!("Listening on {}", addr);
 
-    loop {
-        // Accept an incoming connection
-        let (mut socket, _) = listener.accept().await?;
-
-        // Spawn a new task to handle the connection
-        tokio::spawn(async move {
-            debug!("Trigger new runtime info extraction");
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Get Unix timestamp")
-                .subsec_nanos();
-
-            let exec_dir = format!("data/out-{}", timestamp);
-            file::create_dir(exec_dir.as_str()).expect("Can not create execution directory");
-
-            info!(
-                "Scanning all containers in execution directory {}",
-                &exec_dir
-            );
-
-            let config = config::get_config("/");
-            let containers = insights_runtime_extractor::get_containers();
-
-            for container in containers {
-                info!(
-                    "Scanning container 🫙 {} in {}/{}",
-                    container.id, container.pod_namespace, container.pod_name
-                );
-                insights_runtime_extractor::scan_container(&config, &exec_dir, &container)
+    for stream in listener.incoming() {
+        match stream {
+            Ok(stream) => {
+                thread::spawn(|| handle_trigger_extraction(stream));
             }
+            Err(err) => error!("Error during TCP connection: {}", err),
+        }
+    }
+}
 
-            info!(
-                "Scanning DONE. Sending back the path to the execution directory {}",
-                &exec_dir
-            );
+fn handle_trigger_extraction(mut stream: TcpStream) {
+    debug!("Trigger new runtime info extraction");
 
-            let response = format!("{}\n", &exec_dir);
-            // Write the response message to the socket
-            if let Err(e) = socket.write_all(response.as_bytes()).await {
+    // Execute the "extractor_coordinator" program
+    let output = Command::new("/coordinator").output();
+    match output {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let response = format!("{}\n", stdout);
+            if let Err(e) = stream.write_all(response.as_bytes()) {
                 error!("Failed to write to socket; err = {:?}", e);
             }
-            // Close the socket
-            if let Err(e) = socket.shutdown().await {
-                error!("Failed to shutdown socket; err = {:?}", e);
-            }
-
-            info!("DONE");
-        });
+        }
+        Err(err) => {
+            error!("Error during the extraction of the runtime info: {}", err)
+        }
     }
+    if let Err(e) = stream.shutdown(Shutdown::Both) {
+        error!("Failed to shutdown socket; err = {:?}", e);
+    }
+    info!("DONE");
 }
