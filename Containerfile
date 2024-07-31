@@ -20,8 +20,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN bash -c 'if [ "$TARGETARCH" == "arm64" ]; then rustup target install aarch64-unknown-linux-musl ; else rustup target install x86_64-unknown-linux-musl; fi'
 
-WORKDIR /workspace/insights-runtime-extractor
-COPY insights-runtime-extractor .
+WORKDIR /workspace/extractor
+COPY extractor .
 RUN make TARGETARCH=${TARGETARCH}
 
 FROM golang:1.22 AS go-builder
@@ -40,10 +40,10 @@ RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
 FROM scratch as extractor
 
 COPY --from=rust-builder /crictl /crictl
-COPY --from=rust-builder /workspace/insights-runtime-extractor/config/ /
-COPY --from=rust-builder /workspace/insights-runtime-extractor/target/*/release/extractor_server /extractor_server
+COPY --from=rust-builder /workspace/extractor/config/ /
+COPY --from=rust-builder /workspace/extractor/target/*/release/extractor_server /extractor_server
 # All fingerprints executables are copied to the root directory with other executables
-COPY --from=rust-builder --chmod=755 /workspace/insights-runtime-extractor/target/*/release/fpr_* /
+COPY --from=rust-builder --chmod=755 /workspace/extractor/target/*/release/fpr_* /
 # Copy fingerprints written in Go
 COPY --from=go-builder --chmod=755 /workspace/fingerprints/bin/fpr_* /
 ENTRYPOINT [ "/extractor_server" ]
