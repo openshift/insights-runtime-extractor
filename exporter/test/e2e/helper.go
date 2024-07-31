@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
@@ -51,7 +50,7 @@ func getContainerIDAndWorkerNode(ctx context.Context, c *envconf.Config, g *Ω.W
 	return namespacedContainerId{
 		namespace:   namespace,
 		podName:     pod.ObjectMeta.Name,
-		containerId: strings.TrimPrefix(container.ContainerID, "cri-o://"),
+		containerId: container.ContainerID,
 	}, pod.Spec.NodeName
 }
 

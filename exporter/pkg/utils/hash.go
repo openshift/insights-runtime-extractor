@@ -9,12 +9,12 @@ import (
 // provided string. The resulting string length of 12 is chosen to have a
 // probability of a collision across 1 billion results of 0.0001.
 //
-// if `hash` is false, simply return the provided string.
+// if `hash` is false or the string is empty, simply return the provided string.
 //
 // similar to from https://github.com/openshift/insights-operator/blob/80246495256b1a4628dd45998aa7162d8e934f78/pkg/gatherers/workloads/gather_workloads_info.go#L415
 
 func HashString(hash bool, h hash.Hash, s string) string {
-	if !hash {
+	if !hash || s == "" {
 		return s
 	}
 	h.Reset()
