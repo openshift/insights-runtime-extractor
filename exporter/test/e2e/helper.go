@@ -21,6 +21,8 @@ import (
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
+
+	"exporter/pkg/types"
 )
 
 func newAppDeployment(namespace string, name string, replicas int32, containerName string, image string) *appsv1.Deployment {
@@ -149,36 +151,13 @@ func getInsightsOperatorRuntimePodIPs(
 	return pods, nil
 }
 
-// ContainerRuntimeInfo represents workload info returned by the insights-runtime-extractor component.
-type ContainerRuntimeInfo struct {
-	// Hash of the identifier of the Operating System (based on /etc/os-release ID)
-	Os string `json:"os,omitempty"`
-	// Hash of the version identifier of the Operating System (based on /etc/os-release VERSION_ID)
-	OsVersion string `json:"osVersion,omitempty"`
-	// Identifier of the kind of runtime
-	Kind string `json:"kind,omitempty"`
-	// Version of the kind of runtime
-	KindVersion string `json:"kindVersion,omitempty"`
-	// Entity that provides the runtime-kind implementation
-	KindImplementer string `json:"kindImplementer,omitempty"`
-	// Runtimes components
-	Runtimes []RuntimeComponent `json:"runtimes,omitempty"`
-}
-
-type RuntimeComponent struct {
-	// Name of a runtime used to run the application in the container
-	Name string `json:"name,omitempty"`
-	// The version of this runtime
-	Version string `json:"version,omitempty"`
-}
-
 type namespacedContainerId struct {
 	namespace   string
 	podName     string
 	containerId string
 }
 
-func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid namespacedContainerId, nodeName string) ContainerRuntimeInfo {
+func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid namespacedContainerId, nodeName string) types.ContainerRuntimeInfo {
 	client, err := c.NewClient()
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
@@ -197,7 +176,7 @@ func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid name
 	output := stdout.String()
 	g.Expect(output).Should(Ω.Not(Ω.BeEmpty()))
 
-	var scanOutput map[string]map[string]map[string]ContainerRuntimeInfo
+	var scanOutput map[string]map[string]map[string]types.ContainerRuntimeInfo
 	json.Unmarshal([]byte(output), &scanOutput)
 
 	container := scanOutput[cid.namespace][cid.podName][cid.containerId]
