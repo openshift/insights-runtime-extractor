@@ -1,6 +1,7 @@
 package binstream
 
 import (
+	"io"
 	"os"
 
 	"github.com/edsrzf/mmap-go"
@@ -15,6 +16,7 @@ type FileStream struct {
 	info  os.FileInfo
 	f     *os.File
 	bs    *ByteStream
+	data  mmap.MMap
 }
 
 // Assert interface implementation checks
@@ -47,6 +49,7 @@ func NewFileStream(filename string) (*FileStream, error) {
 		info:  info,
 		f:     f,
 		bs:    bs,
+		data:  data,
 	}, nil
 }
 
@@ -96,7 +99,22 @@ func (fs *FileStream) ReadUint64(off int64) (uint64, error) {
 	return fs.bs.ReadUint64(off)
 }
 
+// IsEOF checks if we reached the end of the bytestream.
+func (fs *FileStream) IsEOF() bool {
+	// a bytestream wraps the bytereader interface
+	// the Len method returns the number of unread bytes
+	// in the underlying stream.
+	n, err := fs.f.Read(nil)
+	if n == 0 || err == io.EOF {
+		return true
+	}
+	return false
+}
+
 // Close underlying filestream.
 func (fs *FileStream) Close() error {
+	if fs.data != nil {
+		_ = fs.data.Unmap()
+	}
 	return fs.f.Close()
 }
