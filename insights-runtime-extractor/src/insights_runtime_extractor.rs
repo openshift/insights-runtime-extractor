@@ -143,7 +143,6 @@ fn fork_and_exec(
                 perms::check_no_privileged_perms()
                     .expect("Must not have privileged permissions to run fingerprints");
             }
-            panic!(test)
             fingerprint::run_fingerprints(&config, out_dir, &process);
 
             let duration = start.elapsed().as_millis();
