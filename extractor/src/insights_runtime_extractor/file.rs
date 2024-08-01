@@ -234,9 +234,9 @@ mod tests {
         entries.insert(String::from("bar"), String::from("value2"));
 
         let dir_path = Path::new(&out);
-        write_fingerprint(dir_path, "test", &entries).expect("wrote fingerprints");
+        write_entries(dir_path, "test.txt", &entries).expect("wrote fingerprints");
 
-        let content = fs::read_to_string(dir_path.join("test-fingerprints.txt"))
+        let content = fs::read_to_string(dir_path.join("test.txt"))
             .expect("Read content from fingerprint file");
         // map is stored in natural order
         assert_eq!(
