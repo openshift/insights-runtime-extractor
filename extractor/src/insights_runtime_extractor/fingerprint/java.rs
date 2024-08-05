@@ -18,7 +18,7 @@ impl Java {
         };
 
         return Some(vec![
-            String::from("./fpr_java"),
+            String::from("./fpr_java_runtimes"),
             out_dir.to_string(),
             jar.to_string(),
         ]);

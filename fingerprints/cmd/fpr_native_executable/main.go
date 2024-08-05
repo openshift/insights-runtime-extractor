@@ -6,13 +6,13 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/saferwall/elf"
+
+	"fingerprints/pkg/utils"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 		entries["runtime-kind"] = "Golang"
 		entries["runtime-kind-version"] = goVersion
 
-		writeFingerprints(outputDir, "runtime-kind.txt", entries)
+		utils.WriteEntries(outputDir, "runtime-kind.txt", entries)
 
 		endTime := time.Now()
 		duration := endTime.Sub(startTime)
@@ -60,7 +60,7 @@ func main() {
 
 	if graalVMExec {
 		entries["runtime-kind"] = "GraalVM"
-		writeFingerprints(outputDir, "runtime-kind.txt", entries)
+		utils.WriteEntries(outputDir, "runtime-kind.txt", entries)
 
 		containsQuarkusStrings, err := checkQuarkusStrings(path)
 		if err != nil {
@@ -70,7 +70,7 @@ func main() {
 
 			runtimeEntries := make(map[string]string)
 			runtimeEntries["Quarkus"] = ""
-			writeFingerprints(outputDir, "quarkus-fingerprints.txt", runtimeEntries)
+			utils.WriteEntries(outputDir, "quarkus-fingerprints.txt", runtimeEntries)
 
 		}
 		endTime := time.Now()
@@ -118,23 +118,6 @@ func getGoVersion(executable string) (string, error) {
 		return "", err
 	}
 	return bi.GoVersion, nil
-}
-
-func writeFingerprints(outputDir string, fileName string, entries map[string]string) {
-	file, err := os.Create(filepath.Join(outputDir, fileName))
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	keys := make([]string, 0, len(entries))
-	for k := range entries {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		file.WriteString(k + "=" + entries[k] + "\n")
-	}
 }
 
 // copied from https://github.com/robpike/strings/blob/master/strings.go

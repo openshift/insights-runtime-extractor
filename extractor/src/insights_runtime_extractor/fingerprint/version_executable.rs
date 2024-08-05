@@ -28,9 +28,9 @@ impl FingerPrint for VersionExecutable {
         {
             return Some(vec![
                 fpr_kind_executable,
+                out_dir.to_string(),
                 String::from(&process.command_line[0]),
                 String::from(&version_executable.runtime_kind_name),
-                out_dir.to_string(),
             ]);
         } else if process.command_line[0].contains("java") {
             // JAVA_HOME env var can not be set

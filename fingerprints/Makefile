@@ -4,7 +4,11 @@ clean:
 	rm -rf ./bin
 
 build: clean
+	go build -o ./bin/fpr_java_runtimes cmd/fpr_java_runtimes/main.go
+	go build -o ./bin/fpr_java_version cmd/fpr_java_version/main.go
+	go build -o ./bin/fpr_kind_executable cmd/fpr_kind_executable/main.go
 	go build -o ./bin/fpr_native_executable cmd/fpr_native_executable/main.go
+	go build -o ./bin/fpr_os cmd/fpr_os/main.go
 
 test: build
 	go test -v ./...
