@@ -12,7 +12,7 @@ clean:
 	cargo clean
 
 .PHONY: test
-test:
+test: build
 	cargo test
 
 .PHONY: check

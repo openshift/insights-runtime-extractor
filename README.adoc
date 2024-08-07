@@ -10,30 +10,64 @@ This feature was proposed and approved by https://github.com/openshift/enhanceme
 
 The container image is published at `ghcr.io/jmesnil/insights-runtime-extractor:latest`
 
-## Build the container image for development
+The container images built from this project provides an `insights-runtime-extractor`
+feature integrated to the https://github.com/openshift/insights-operator/tree/master[OpenShift Insights Operator].
+
+The request for enhancement for this feature was created at https://github.com/openshift/enhancements/pull/1584.
+
+The container images are built by a GitHub action and published to:
+
+* `ghcr.io/jmesnil/insights-runtime-extractor:latest`
+* `ghcr.io/jmesnil/insights-runtime-exporter:latest`
+
+## Build the container images
 
 [source,bash]
 ----
-./scripts/build.sh
+make build-image
 ----
 
-It builds a multi-arch (ARM64 & AMD64) image named `quay.io/jmesnil/insights-runtime-extractor:latest`.
+It builds 2 multi-arch (ARM64 & AMD64) images:
 
-## Build the development image
+* `quay.io/jmesnil/insights-runtime-extractor:latest`
+* `quay.io/jmesnil/insights-runtime-exporter:latest`
+
+To build the images in another container registry, you can use the `IMAGE_REGISTRY` env var:
 
 [source,bash]
 ----
-./scripts/build-dev.sh
+IMAGE_REGISTRY=quay.io/my-user-name make build-image
 ----
 
-This creates a `rust-dev` Container image that contains all the Rust plumbing to compile and execute the code
-
-## Run the development image and compile the Rust code base
+## Build the development image for Rust
 
 [source,bash]
 ----
-./scripts/rust-dev.sh
+make build-rust-dev-image
+----
+
+This creates a `rust-dev` Container image that contains all the Rust plumbing to compile and execute the code in `extractor`
+
+### Run the development image and compile the Rust code base
+
+[source,bash]
+----
+make rust-dev
 
 # you are then inside a container ready to compile the Rust code
 make
+----
+
+## Test the container images
+
+Prequesites:
+
+* To test the container images, you must have access to an OpenShift cluster and
+be logged in with a cluster admin account.
+
+To run the end-to-end (e2e) tests, run the command:
+
+[source,bash]
+----
+IMAGE_REGISTRY=quay.io/jmesnil make e2e-test
 ----

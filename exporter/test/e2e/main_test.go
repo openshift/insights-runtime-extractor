@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -29,15 +30,14 @@ func TestMain(m *testing.M) {
 	testEnv = env.NewWithConfig(cfg)
 	namespace = envconf.RandomName("e2e", 10)
 	insightsOperatorRuntimeNamespace = os.Getenv("TEST_NAMESPACE")
-	testedExtractorImage = "quay.io/jmesnil/insights-runtime-extractor:latest"
-	if value, ok := os.LookupEnv("TESTED_EXTRACTOR_IMAGE"); ok {
-		testedExtractorImage = value
-	}
-	testedExporterImage = "quay.io/jmesnil/insights-runtime-exporter:latest"
-	if value, ok := os.LookupEnv("TESTED_EXPORTER_IMAGE"); ok {
-		testedExporterImage = value
+	testedExtractorImage = "ghcr.io/jmesnil/insights-runtime-extractor:latest"
+	testedExporterImage = "ghcr.io/jmesnil/insights-runtime-exporter:latest"
+	if imageRegistry, ok := os.LookupEnv("IMAGE_REGISTRY"); ok {
+		testedExtractorImage = imageRegistry + "/insights-runtime-extractor:latest"
+		testedExporterImage = imageRegistry + "/insights-runtime-exporter:latest"
 	}
 
+	fmt.Printf("====Testing images:\n\t%s\n\t%s====\n", testedExtractorImage, testedExporterImage)
 	insightsOperatorRuntime := newContainerScannerDaemonSet()
 	curl := newCurlDeployment()
 

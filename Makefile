@@ -1,6 +1,6 @@
 .DEFAULT_GOAL = build-image
 
-build-dev-image:
+build-rust-dev-image:
 	./scripts/build-dev.sh
 
 rust-dev:
@@ -8,3 +8,6 @@ rust-dev:
 
 build-image:
 	./scripts/build.sh
+
+e2e-test: build-image
+	cd exporter && make e2e-test
