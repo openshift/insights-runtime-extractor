@@ -14,7 +14,8 @@ func TestPython3(t *testing.T) {
 
 	appName := "python3-app"
 	containerName := "python"
-	image := "python:3.12.2"
+	// corresponded to python:3.9.19-slim
+	image := "python@sha256:85c7a2a383a01e0b77b5f9c97d8b1eef70409a99552fde03c518a98dfa19609c"
 	deployment := newPython3AppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Python3 from base image "+image).
@@ -42,7 +43,7 @@ func TestPython3(t *testing.T) {
 			g.Expect(result.Os).Should(Ω.Equal("debian"))
 			g.Expect(result.OsVersion).Should(Ω.Equal("12"))
 			g.Expect(result.Kind).Should(Ω.Equal("Python"))
-			g.Expect(result.KindVersion).Should(Ω.Equal("Python 3.12.2"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("Python 3.9.19"))
 			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(0))
