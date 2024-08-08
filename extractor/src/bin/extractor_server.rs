@@ -1,5 +1,5 @@
 use clap::Parser;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use std::fs;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
@@ -57,10 +57,17 @@ fn handle_trigger_extraction(mut stream: TcpStream) {
     debug!("Trigger new runtime info extraction");
 
     // Execute the "extractor_coordinator" program
-    let output = Command::new("/coordinator").output();
+    let output = Command::new("/coordinator")
+        .arg("--log-level")
+        .arg("trace")
+        .output();
     match output {
         Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            trace!("{}\n", stderr);
+
             let stdout = String::from_utf8_lossy(&output.stdout);
+
             let response = format!("{}\n", stdout);
             if let Err(e) = stream.write_all(response.as_bytes()) {
                 error!("Failed to write to socket; err = {:?}", e);

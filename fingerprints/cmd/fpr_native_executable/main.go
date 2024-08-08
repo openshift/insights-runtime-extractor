@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -28,8 +29,10 @@ func main() {
 
 	path := executable
 	if !strings.HasPrefix(executable, "/") {
-		path = cwd + executable
+		path = filepath.Join(cwd, executable)
 	}
+
+	log.Printf("🔎 Fingerprinting the native executable %s to %s\n", path, outputDir)
 
 	isElf := isElfExecutable(path)
 	if !isElf {

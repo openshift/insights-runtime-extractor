@@ -2,7 +2,7 @@ use clap::Parser;
 use log::info;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use insights_runtime_extractor::{config, file, perms};
+use insights_runtime_extractor::{config, file, get_container, get_containers, perms};
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -13,13 +13,15 @@ struct Args {
         help = "Log level (default is warn) [possible values: debug, info, warn, error]"
     )]
     log_level: Option<String>,
+
+    #[arg(help = "ID of the container to scan. If absent, all containers are scanned")]
+    container_id: Option<String>,
 }
 
 fn main() {
     let args = Args::parse();
 
     let log_level = args.log_level.unwrap_or(String::from("info"));
-
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
 
     info!("Gather runtime information from containers on OpenShift");
@@ -41,7 +43,13 @@ fn main() {
         &exec_dir
     );
 
-    let containers = insights_runtime_extractor::get_containers();
+    let containers = match args.container_id {
+        None => get_containers(),
+        Some(container_id) => match get_container(&container_id) {
+            Some(container) => vec![container],
+            None => vec![],
+        },
+    };
 
     for container in containers {
         info!(

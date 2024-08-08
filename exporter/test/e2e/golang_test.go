@@ -13,7 +13,7 @@ func TestGolang(t *testing.T) {
 
 	appName := "golang-app"
 	containerName := "app"
-	image := "quay.io/jmesnil/docker-gs-ping:latest"
+	image := "image-registry.openshift-image-registry.svc:5000/e2e-insights-runtime-extractor/golang-app:1.0"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Golang application "+image).
@@ -41,7 +41,7 @@ func TestGolang(t *testing.T) {
 			g.Expect(result.Os).Should(Ω.Equal("debian"))
 			g.Expect(result.OsVersion).Should(Ω.Equal("12"))
 			g.Expect(result.Kind).Should(Ω.Equal("Golang"))
-			g.Expect(result.KindVersion).Should(Ω.Equal("go1.19.13"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("go1.22.6"))
 			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(0))

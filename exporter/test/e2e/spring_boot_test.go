@@ -13,7 +13,7 @@ func TestSpringBoot(t *testing.T) {
 
 	appName := "spring-boot"
 	containerName := "c1"
-	image := "quay.io/jmesnil/spring-boot-app"
+	image := "image-registry.openshift-image-registry.svc:5000/e2e-insights-runtime-extractor/spring-boot:0.0.1-SNAPSHOT"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Spring Boot").
@@ -38,11 +38,11 @@ func TestSpringBoot(t *testing.T) {
 			result := scanContainer(ctx, g, c, cid, nodeName)
 			g.Expect(result).ShouldNot(Ω.BeNil())
 
-			g.Expect(result.Os).Should(Ω.Equal("ol"))
-			g.Expect(result.OsVersion).Should(Ω.Equal("8.5"))
+			g.Expect(result.Os).Should(Ω.Equal("ubuntu"))
+			g.Expect(result.OsVersion).Should(Ω.Equal("20.04"))
 			g.Expect(result.Kind).Should(Ω.Equal("Java"))
-			g.Expect(result.KindVersion).Should(Ω.Equal("17.0.2"))
-			g.Expect(result.KindImplementer).Should(Ω.Equal("Oracle Corporation"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("17.0.12"))
+			g.Expect(result.KindImplementer).Should(Ω.Equal("Eclipse Adoptium"))
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))
 			runtime := result.Runtimes[0]

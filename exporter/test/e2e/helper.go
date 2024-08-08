@@ -63,6 +63,9 @@ func getPod(ctx context.Context, c *envconf.Config, g *Ω.WithT, namespace strin
 	err = client.Resources(namespace).List(ctx, &pods, resources.WithLabelSelector(selector))
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
+	if len(pods.Items) > 1 {
+		fmt.Printf("Got more pods than expected:%#v\n", &pods.Items)
+	}
 	g.Expect(len(pods.Items)).Should(Ω.Equal(1))
 
 	pod := pods.Items[0]
@@ -113,14 +116,25 @@ func podsReady(client klient.Client, selector string) apimachinerywait.Condition
 		if err := client.Resources().List(ctx, &pods, watchOptions); err != nil {
 			return false, err
 		}
+
+		if len(pods.Items) == 0 {
+			return false, nil
+		}
+
 		for _, pod := range pods.Items {
+			podReady := false
 			for _, cond := range pod.Status.Conditions {
 				if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
-					done = true
+					podReady = true
+					break
 				}
 			}
+			if !podReady {
+				return false, nil
+			}
 		}
-		return
+
+		return true, nil
 	}
 }
 

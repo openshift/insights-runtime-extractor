@@ -1,4 +1,4 @@
-use log::{debug, warn};
+use log::{debug, trace, warn};
 use std::process::Command;
 
 use crate::config::Config;
@@ -39,8 +39,10 @@ pub fn run_fingerprints(config: &Config, out_dir: &String, process: &ContainerPr
                 match command {
                     Ok(output) => match output.status.success() {
                         true => {
-                            let output = String::from_utf8_lossy(&output.stdout);
-                            debug!("{}", output);
+                            let stdout = String::from_utf8_lossy(&output.stdout);
+                            trace!("stdout => {}\n", stdout);
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            trace!("stderr => {}\n", stderr);
                         }
                         false => {
                             let error = String::from_utf8_lossy(&output.stderr);
