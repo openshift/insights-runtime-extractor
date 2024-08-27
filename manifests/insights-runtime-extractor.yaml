@@ -20,13 +20,17 @@ spec:
         kubernetes.io/os: linux
       containers:
         - name: exporter
-          image: quay.io/jmesnil/insights-runtime-exporter:latest
+          image: ghcr.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
           volumeMounts:
             - mountPath: /data
               name: data-volume
+          command:
+            - /exporter
+            - -bind
+            - 0.0.0.0
         - name: extractor
-          image: quay.io/jmesnil/insights-runtime-extractor:latest
+          image: ghcr.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
