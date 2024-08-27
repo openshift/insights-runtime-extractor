@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/sha256"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -152,10 +153,15 @@ func collectWorkloadPayload(hash bool, dataPath string) (types.NodeRuntimeInfo, 
 }
 
 func main() {
+	bindAddress := flag.String("bind", "127.0.0.1", "Bind address")
+
+	flag.Parse()
+
 	http.HandleFunc("/gather_runtime_info", gatherRuntimeInfo)
 
-	log.Println("Starting exporter HTTP server at port 8000")
-	if err := http.ListenAndServe(":8000", nil); err != nil {
+	address := *bindAddress + ":8000"
+	log.Printf("Starting exporter HTTP server at %s\n", address)
+	if err := http.ListenAndServe(address, nil); err != nil {
 		log.Fatal(err)
 	}
 }

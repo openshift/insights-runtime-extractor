@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
+	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 )
 
 var (
@@ -28,7 +29,6 @@ func TestMain(m *testing.M) {
 	cfg, _ := envconf.NewFromFlags()
 	testEnv = env.NewWithConfig(cfg)
 	namespace = "e2e-insights-runtime-extractor"
-	// 	envconf.RandomName("e2e", 10)
 	insightsOperatorRuntimeNamespace = os.Getenv("TEST_NAMESPACE")
 	testedExtractorImage = "ghcr.io/jmesnil/insights-runtime-extractor:latest"
 	testedExporterImage = "ghcr.io/jmesnil/insights-runtime-exporter:latest"
@@ -42,7 +42,7 @@ func TestMain(m *testing.M) {
 	curl := newCurlDeployment()
 
 	testEnv.Setup(
-		//		envfuncs.CreateNamespace(namespace),
+		envfuncs.CreateNamespace(namespace),
 		deployAndWaitForReadiness(curl, "app.kubernetes.io/name=curl-e2e"),
 		deployAndWaitForReadiness(insightsOperatorRuntime, "app.kubernetes.io/name=insights-runtime-extractor-e2e"),
 	)
@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 	testEnv.Finish(
 		undeploy(insightsOperatorRuntime),
 		undeploy(curl),
-		//		envfuncs.DeleteNamespace(namespace),
+		envfuncs.DeleteNamespace(namespace),
 	)
 
 	os.Exit(testEnv.Run(m))
@@ -101,6 +101,7 @@ func newContainerScannerDaemonSet() *appsv1.DaemonSet {
 							MountPath: "/data",
 							Name:      "data-volume",
 						}},
+						Command: []string{"/exporter", "-bind", "0.0.0.0"},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: "crio-socket",
