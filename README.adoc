@@ -114,31 +114,33 @@ This command will output all the extracted runtime info organized by `namespace`
 
 [source,json]
 ----
+Extracting runtime info from insights-runtime-extractor-wt5nr...
+Extracting runtime info from insights-runtime-extractor-z74cp...
 {
   "default": {
-    "insights-runtime-extractor-6xcrv": {
-      "cri-o://d5cb3866a42600dd57db3128c6801b20c53717eb2db20d28681c12d2d9b9b568": {
+    "insights-runtime-extractor-z74cp": {
+      "cri-o://0bfd3fcf6cbe8b4429bcc1a8d553a059434362943bd463473bcd113133b96cb8": {
         "os": "rhel",
         "osVersion": "9.4",
         "kind": "Golang",
         "kindVersion": "go1.22.6"
       },
-      "cri-o://d915fdaa4e1b37fcf01f044d51ba8876c0a8f2a0c14e5bec2aada64e8847aa2e": {
+      "cri-o://5e1adf8d60272f0489b4f58eb96116b8269d3bf88f4ec20436c1479833c32a44": {
         "os": "rhel",
         "osVersion": "9.4"
       }
     }
   },
   "kube-system": {
-    "konnectivity-agent-hqzgk": {
-      "cri-o://cd51b42c27004ac9e0809b85b6182d1265e59d1d37c749ed8b6da34f9de519cc": {
+    "konnectivity-agent-mm8jh": {
+      "cri-o://cc934f43953b724f97e57aa02d6c3518d1ddc92f996323d76db9f0a44ec620de": {
         "os": "rhel",
         "osVersion": "9.2",
         "kind": "Golang",
         "kindVersion": "go1.21.11 (Red Hat 1.21.11-1.el9_4) X:strictfipsruntime"
       }
     },
-  },
+  }
   [...]
 }
 ----
