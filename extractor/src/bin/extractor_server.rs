@@ -1,10 +1,11 @@
 use clap::Parser;
-use log::{debug, error, info, trace};
+use log::{error, info, trace};
 use std::fs;
 use std::io::Write;
 use std::net::{Shutdown, TcpListener, TcpStream};
 use std::process::Command;
 use std::thread;
+use std::time::Instant;
 
 use insights_runtime_extractor::{config, perms};
 
@@ -54,7 +55,9 @@ fn main() {
 }
 
 fn handle_trigger_extraction(mut stream: TcpStream) {
-    debug!("Trigger new runtime info extraction");
+    info!("Triggering new runtime info extraction");
+
+    let start = Instant::now();
 
     // Execute the "extractor_coordinator" program
     let output = Command::new("/coordinator")
@@ -69,6 +72,10 @@ fn handle_trigger_extraction(mut stream: TcpStream) {
             let stdout = String::from_utf8_lossy(&output.stdout);
 
             let response = format!("{}\n", stdout);
+
+            let duration = start.elapsed().as_secs();
+            info!("Info extracted in {}s, stored at {}", duration, response);
+
             if let Err(e) = stream.write_all(response.as_bytes()) {
                 error!("Failed to write to socket; err = {:?}", e);
             }
@@ -80,5 +87,4 @@ fn handle_trigger_extraction(mut stream: TcpStream) {
     if let Err(e) = stream.shutdown(Shutdown::Both) {
         error!("Failed to shutdown socket; err = {:?}", e);
     }
-    info!("DONE");
 }

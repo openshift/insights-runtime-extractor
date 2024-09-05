@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"exporter/pkg/types"
 	"exporter/pkg/utils"
@@ -32,6 +33,7 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 	hashParam := r.URL.Query().Get("hash")
 	hash := hashParam == "" || hashParam == "true"
 
+	startTime := time.Now()
 	dataPath, err := triggerRuntimeInfoExtraction()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -43,7 +45,6 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer os.RemoveAll(dataPath)
-	log.Println("Reading runtime info data from :", dataPath)
 
 	payload, err := collectWorkloadPayload(hash, dataPath)
 	if err != nil {
@@ -56,6 +57,8 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	duration := time.Since(startTime)
+	log.Printf("Extracted data from %s (%d bytes) in %s", dataPath, len(response), duration)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(response)
 }
@@ -67,7 +70,7 @@ func triggerRuntimeInfoExtraction() (string, error) {
 	}
 	defer conn.Close()
 
-	log.Println("Trigger new runtime extraction")
+	log.Println("Requesting a new runtime extraction")
 	// write to TCP connection to trigger a runtime extraction
 	fmt.Fprintf(conn, "")
 
