@@ -24,7 +24,7 @@ WORKDIR /workspace/extractor
 COPY extractor .
 RUN make TARGETARCH=${TARGETARCH}
 
-FROM golang:1.22 AS go-builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.22-openshift-4.18 AS go-builder
 
 WORKDIR /workspace/fingerprints
 COPY fingerprints .
@@ -37,7 +37,7 @@ ARG GO_LDFLAGS=""
 RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
 
 # Target image for the extractor component
-FROM registry.access.redhat.com/ubi9/ubi-minimal as extractor
+FROM registry.ci.openshift.org/ocp/4.18:base-rhel9 as extractor
 
 COPY --from=rust-builder /crictl /crictl
 COPY --from=rust-builder /workspace/extractor/config/ /
@@ -49,7 +49,7 @@ ENTRYPOINT [ "/extractor_server" ]
 
 # Target image for the exporter component
 
-FROM registry.access.redhat.com/ubi9-minimal as exporter
+FROM registry.ci.openshift.org/ocp/4.18:base-rhel9 as exporter
 
 COPY --from=go-builder /workspace/exporter/bin/exporter /
 ENTRYPOINT [ "/exporter" ]

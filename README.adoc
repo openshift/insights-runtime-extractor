@@ -15,11 +15,6 @@ feature integrated to the https://github.com/openshift/insights-operator/tree/ma
 
 The request for enhancement for this feature was created at https://github.com/openshift/enhancements/pull/1584.
 
-The container images are built by a GitHub action and published to:
-
-* `ghcr.io/openshift/insights-runtime-extractor:latest`
-* `ghcr.io/openshift/insights-runtime-exporter:latest`
-
 ## Build the container images for development
 
 [source,bash]

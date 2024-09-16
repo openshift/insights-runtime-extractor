@@ -13,7 +13,7 @@ for component in "extractor" "exporter" ; do
   podman manifest rm $IMG
   podman manifest create $IMG
 
-  podman build --platform linux/arm64,linux/amd64 --manifest $IMG --target=$component .
+  podman build --platform linux/amd64 --manifest $IMG --target=$component .
 
   if [ $? -ne 0 ]; then
     echo "❌ Building image failed"
