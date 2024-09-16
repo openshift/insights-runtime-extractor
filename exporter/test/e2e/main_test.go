@@ -30,8 +30,8 @@ func TestMain(m *testing.M) {
 	testEnv = env.NewWithConfig(cfg)
 	namespace = "e2e-insights-runtime-extractor"
 	insightsOperatorRuntimeNamespace = os.Getenv("TEST_NAMESPACE")
-	testedExtractorImage = "ghcr.io/jmesnil/insights-runtime-extractor:latest"
-	testedExporterImage = "ghcr.io/jmesnil/insights-runtime-exporter:latest"
+	testedExtractorImage = "ghcr.io/openshift/insights-runtime-extractor:latest"
+	testedExporterImage = "ghcr.io/openshift/insights-runtime-exporter:latest"
 	if imageRegistry, ok := os.LookupEnv("IMAGE_REGISTRY"); ok {
 		testedExtractorImage = imageRegistry + "/insights-runtime-extractor:latest"
 		testedExporterImage = imageRegistry + "/insights-runtime-exporter:latest"

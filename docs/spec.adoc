@@ -55,7 +55,7 @@ Executing the container scanner on a worker node will report a JSON payload such
 [source,json]
 ----
 {
-  "jmesnil-dev": {
+  "my-app-dev": {
     "app1-m2er6": {
       "cri-o://1232455343434": {
         "os-release-id": "rhel",
@@ -91,7 +91,7 @@ Executing the container scanner on a worker node will report a JSON payload such
 }
 ----
 
-The  `app2-m2er6` pod in the `jmesnil-dev` namespace is composed of 2 containers:
+The  `app2-m2er6` pod in the `my-app-dev` namespace is composed of 2 containers:
 
 * The container `cri-o://1232455343434` has the following runtime information:
 ** It is running Quarkus 2.13.8.Final-redhat-00004 (the version identifies it as a Red Hat Build of Quarkus).
@@ -100,7 +100,7 @@ The  `app2-m2er6` pod in the `jmesnil-dev` namespace is composed of 2 containers
 * The oother container `cri-o://7e345b423a1241` contains a executable runnig Go 1.20.1. It does not contain any information about the Operating System (it might be a scratch image) or any runtime components.
 
 
-The container `cri-o://6e924d4c88e158e9881c6` that belongs to the `db1-er6et` pod in the `jmesnil-dev` namespace has the following runtime information:
+The container `cri-o://6e924d4c88e158e9881c6` that belongs to the `db1-er6et` pod in the `my-app-dev` namespace has the following runtime information:
 
 * It is running PostgreSQL 15.6
 * The container image was built from Oracle Linux 8.9

@@ -27,8 +27,6 @@ Other options would be to push it to another quay.io organization unrelated to q
 
 ### Source code
 
-The current container scanner implementation is at https://gitlab.cee.redhat.com/jmesnil/container-scanning which is a individual project behind Red Hat VPN.
-
 In order to be integrated and delivered with OpenShift, it must be a public project.
 As the container scanner is tied to the Insights Operator (whose source code is at https://github.com/openshift/insights-operator/), it makes sense to keep its source code under the same organization umbrella with a name matching its purpose.
 

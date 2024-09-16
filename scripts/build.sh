@@ -1,5 +1,7 @@
 if [[ -z "${IMAGE_REGISTRY}"  ]]; then
-  IMAGE_REGISTRY="quay.io/jmesnil"
+  echo "❌ You must specify IMAGE_REGISTRY to build and push an image to a container registry"
+  echo "   e.g. IMAGE_REGISTRY=quay.io/<my-user-name>"
+  exit 1
 fi
 if [[ -z "${TAG}"  ]]; then
   TAG=latest

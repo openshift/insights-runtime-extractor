@@ -17,27 +17,20 @@ The request for enhancement for this feature was created at https://github.com/o
 
 The container images are built by a GitHub action and published to:
 
-* `ghcr.io/jmesnil/insights-runtime-extractor:latest`
-* `ghcr.io/jmesnil/insights-runtime-exporter:latest`
+* `ghcr.io/openshift/insights-runtime-extractor:latest`
+* `ghcr.io/openshift/insights-runtime-exporter:latest`
 
-## Build the container images
-
-[source,bash]
-----
-make build-image
-----
-
-It builds 2 multi-arch (ARM64 & AMD64) images:
-
-* `quay.io/jmesnil/insights-runtime-extractor:latest`
-* `quay.io/jmesnil/insights-runtime-exporter:latest`
-
-To build the images in another container registry, you can use the `IMAGE_REGISTRY` env var:
+## Build the container images for development
 
 [source,bash]
 ----
-IMAGE_REGISTRY=quay.io/my-user-name make build-image
+IMAGE_REGISTRY=quay.io/<my-user-name> make build-image
 ----
+
+It builds 2 multi-arch image (amd64 & armd64) images:
+
+* `$IMAGE_REGISTRY/insights-runtime-extractor:latest`
+* `$IMAGE_REGISTRY/insights-runtime-exporter:latest`
 
 ## Build the development image for Rust
 
@@ -69,7 +62,7 @@ To run the end-to-end (e2e) tests, run the command:
 
 [source,bash]
 ----
-IMAGE_REGISTRY=quay.io/jmesnil make e2e-test
+IMAGE_REGISTRY=quay.io/<my-user-name> make e2e-test
 ----
 
 ## Run the extractor
@@ -84,8 +77,8 @@ To deploy the insights-runtime-extractor in the `default` namespace, run the com
 [source,bash]
 ----
 oc project default
-oc apply -f https://raw.githubusercontent.com/jmesnil/insights-runtime-extractor/main/manifests/insights-runtime-extractor-scc.yaml
-oc apply -f https://raw.githubusercontent.com/jmesnil/insights-runtime-extractor/main/manifests/insights-runtime-extractor.yaml
+oc apply -f https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/manifests/insights-runtime-extractor-scc.yaml
+oc apply -f https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/manifests/insights-runtime-extractor.yaml
 ----
 
 Verify that it is properly deployed:
@@ -107,7 +100,7 @@ Once the `insights-runtime-extractor` is ready, you can extract all the runtime 
 
 [source,bash]
 ----
-curl -s -L https://raw.githubusercontent.com/jmesnil/insights-runtime-extractor/main/scripts/extract.sh | bash -s
+curl -s -L https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/scripts/extract.sh | bash -s
 ---- 
 
 This command will output all the extracted runtime info organized by `namespace`, `pod` names and `container` ID:
