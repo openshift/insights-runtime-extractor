@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
@@ -24,7 +23,7 @@ go.work.sum
 
 # env file
 .env
-=======
+
 .bash_history
 .rustup
 .vscode
@@ -79,16 +78,10 @@ hs_err_pid*.log
 PutObjectStoreDirHere
 # ignore mvn-rpmbuild repo
 /.m2
-# ignore eap repo
-local-repo-eap
 # ignore the build metadata created by the build metadata plugin
 build.metadata
-#These keep hanging around
-arquillian/*/server.log*
-client/shade/dependency-reduced-pom.xml
 
 #OS X stuff
 .DS_Store
 
 tools/zipextractor/zipextractor
->>>>>>> e2a14a7 (initial import)

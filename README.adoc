@@ -10,17 +10,12 @@ This feature was proposed and approved by https://github.com/openshift/enhanceme
 
 This repository is composed of multiple components:
 
-* `fingerprints`
-  * self-contained executables that are executed in the container process namespaces to extract runtime information
-* `extractor`
-  * the "core" engine that queries processes running in containers, detect the relevant fingerprints to run and coordinates their execution to extract information.
-  * it is composed of 2 executables:
-    * the `coordinator`, running with high privileges, that does the extraction of the runtime information and store them on the file system.
-    * the `extractor_server`, a simple TCP server that awaits for TCP connection to trigger an extraction from the `coordinator` and replies with the path of the extracted data on the file system.
-* `exporter`
-  * the "public" access to the extractor. It is a HTTP server, that, upon an HTTP request, will trigger an extraction by connecting to the `extractor_server`. It then reads and aggregates all the runtime information from the file system and replies with a JSON payload.
-* `runtime-samples`
-  * a collection of runtime projects to test the components in its end-to-end (e2e) test suite.
+* `fingerprints` - a collection of self-contained executables that are executed in the container process namespaces to extract runtime information
+* `extractor` - the "core" engine that queries processes running in containers, detect the relevant fingerprints to run and coordinates their execution to extract information. It is composed of 2 executables:
+** the `coordinator`, running with high privileges, that does the extraction of the runtime information and store them on the file system.
+** the `extractor_server`, a simple TCP server that awaits for TCP connection to trigger an extraction from the `coordinator` and replies with the path of the extracted data on the file system.
+* `exporter` - the "public" access to the extractor. It is a HTTP server, that, upon an HTTP request, will trigger an extraction by connecting to the `extractor_server`. It then reads and aggregates all the runtime information from the file system and replies with a JSON payload.
+* `runtime-samples` - a collection of runtime projects to test the components in its end-to-end (e2e) test suite.
 
 This repository provides two container images:
 
@@ -37,7 +32,7 @@ Both containers are meant to run in a single pod and share their file system usi
 IMAGE_REGISTRY=quay.io/<my-user-name> make build-image
 ----
 
-It builds 2 multi-arch image (amd64 & armd64) images:
+It builds 2 multi-arch image (amd64 & arm64) images:
 
 * `$IMAGE_REGISTRY/insights-runtime-extractor:latest`
 * `$IMAGE_REGISTRY/insights-runtime-exporter:latest`
