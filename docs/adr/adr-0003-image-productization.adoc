@@ -1,0 +1,56 @@
+---
+status: "🔄 Proposed"
+creation-date: "2024-04-19"
+update-date: ""
+see-also:
+- "adr-0001-integration-insights-operator"
+- "docs/adr/adr-0002-rust-implementation"
+---
+# Productization of the container scanner image
+
+## Context and Problem Statement
+
+In the context of integrating the container scanner in the OpenShift Insights Operator, the container scanner must be delivered as a container image that is pulled and available by default in OpenShift installations so tha the Insights Operator can create the appropriate resources to extract runtime information from OpenShift workload.
+
+It is integrated and delivered within the OpenShift Insights Operator. The location of the image and its maintenance should match those of the operator.
+
+## Considered Options
+
+### Container Registry
+
+As the container scanner is integrated in the OpenShift Insights Operator, it must be available in a container registry to be pulled and included in default OpenShift installations.
+The container image for the OpenShift Insights Operator is pushed to https://quay.io/repository/openshift/origin-insights-operator[quay.io/openshift/origin-insights-operator].
+
+As the container scanner capabilities are tied to the Insights Operator, it makes sense to keep the container scanner image colocated to it.
+
+Other options would be to push it to another quay.io organization unrelated to quay.io/openshift but this would complicate the integration, releases and maintenance of the container scanner that should be maintained as part of OpenShift releases.
+
+### Source code
+
+In order to be integrated and delivered with OpenShift, it must be a public project.
+As the container scanner is tied to the Insights Operator (whose source code is at https://github.com/openshift/insights-operator/), it makes sense to keep its source code under the same organization umbrella with a name matching its purpose.
+
+Making it available at https://github.com/openshift/insights-runtime-extractor ensures that it is properly identified and handled as a component of OpenShift.
+
+### Build Pipeline
+
+As this is a new image that needs to be productized, it is expected to be build on Konflux instead of legacy image building pipelines. 
+
+This decisions relies on the capabilities for Konflux to build images based on Rust and Go.
+
+## Decision
+
+The container scanner source code is located at https://github.com/openshift/insights-runtime-extractor.
+It is built using Konflux and pushed to https://quay.io/repository/openshift/origin-insights-runtime-extractor[quay.io/openshift/origin-insights-runtime-extractor].
+
+It is be integrated in OpenShift in the same fashion that the Insights Operator through OCP ART.
+
+## Consequences
+
+The maintenance and development of the container scanner is tied and integrated into the OpenShift Insights Operator releases.
+
+Issue management must comply to the OpenShift Container Platform issue tracker. It can be under the https://issues.redhat.com/issues/?jql=project%20%3D%20OCPBUGS%20AND%20component%20%3D%20%22Insights%20Operator%22[existing component for the Insights Operator] as it is ultimately the component that delivers its capabilities.
+
+## More Information
+
+* https://issues.redhat.com/browse/STONEBLD-588[STONEBLD-588 - Add Rust support to Cachi2 and Cachito]

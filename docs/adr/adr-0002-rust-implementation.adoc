@@ -1,0 +1,55 @@
+---
+status: "✅ Accepted"
+creation-date: "2024-04-18"
+update-date: "2024-04-19"
+see-also:
+- "adr-0003-image-productization"
+replaces:
+superseded-by:
+---
+# Rust implementation
+
+## Context
+
+The container scanner requires high permissions to access the processes on OpenShift worker nodes and extract information after entering the process namespaces.
+
+It must be implemented in a language that provides  memory-safety and thread-safety guarantees
+
+### Hardened and Minimized Privileged Code
+
+Introspecting the runtime environment of an arbitrary running container requires certain root-like system capabilities. First, the ability to introspect the host process table (`/proc` on a root pid namespace) is necessary to detect key processes running in all containers. Second, the ability to switch to an arbitrary mount namespace hosting the inspected container's overlay filesystem is required to be able to examine and identify file contents within the container.  Third, read & write access to the container runtime socket (`/var/run/crio.sock`) is needed to portably correlate container metadata with a discovered process. Finally, for safety reasons described below, the ability to switch to an arbitrary user is required to drop privileges yet retain the necessary permission to analyze file contents.
+
+Any code running under such a high level of privilege is an attractive target for privilege escalation, since it can be leveraged to gain complete access to the node’s underlying operating system, and all hosted data. It is therefore essential to minimize the potential attack surface area and harden all essential code of the container scanner.
+
+### Reducing Attack Surface Area through Modular Process Design
+
+Splitting the scanning logic into multiple plugins/modules not only allows for extensibility but also provides for the ability to partition critical privilege requiring code from code which requires only point in time access to a specific container. Following this approach, privileged actions can be limited to a thin coordinator process, with the bulk of logic executed as a forked downgraded process limited to the same access afforded the inspected container target. Additionally, limiting the lifespan of the downgraded logic's process to a per-container execution basis mitigates potential attacks where a rogue container corrupts the scanning logic to modify or gain access to a second victim container. 
+
+### Thin Privileged Coordinator Process
+
+The risk of a workable exploit can be greatly reduced by minimizing the amount of total potential code, including the number and size of third-party dependencies. This comes from two key factors: First, the reduced complexity of the system limits the number of potential attack points, and secondly, the smaller total code set improves the speed and effectiveness of both human and automated code auditing.
+
+As such, three key key rules should be followed in the design and implementation of the coordinator process
+
+1. __Dynamic loading of arbitrary executable code should never be supported or allowed by the coordinator process.__ This precludes scripting language runtimes (such as python and JS) as well as bytecode interpreting languages such as Java, .Net, and WASM. It also precludes usage of `dlopen()``, or libraries with dynamic loading capabilities: the process must be statically compiled. 
+2. __Dependencies in the coordinator should be kept to only the provided language SDK, and Linux system contracts__, even at the expense of some code duplication
+3. __Coordinator code should be limited to what is strictly required__ to execute in a privileged manner. All non-privilege requiring code should be externalized into the logic of other processes.
+
+### Defensive Input and Memory Guarding
+
+While keeping the bulk of analysis logic out of the coordinator process reduces risk, there is still the potential for a deprivileged scanner to influence the coordinator as a corrupted relay through its required communication channel. As an example, a corrupted container could lead a scanner process to write a carefully crafted payload which triggers a buffer overflow and potentially arbitrary code execution in the coordinator. Therefore the coordinator process should take particular care in the handling of all input, assuming potentially hostile data. Additionally, the coordinator process should take advantage of technologies and techniques that mitigate memory corruption defects. As an example, Rust's memory access model provides strong guarantees of memory safety, and limits state mutability to the smaller set of intended write code paths. Usage of a defensive language like Rust over a traditional memory unsafe language like C would mitigate risk further by providing a second line of defense, as well as preventing a number of common issues frequently leveraged in exploits. 
+
+## Decision
+
+The container scanner is implemented in https://www.rust-lang.org[Rust] that provides a rich type system, memory-safety and thread-safety guarantees. 
+It is well suited to build the coordinator of the container scanner as a self-contained native executable that will reduce the surface attack area of the container scanner.
+
+"Fingerprints" which are self-contained native executables that are executed in the process namespaces does not necessarily need to be written in Rust as long as they are guarded against defensive input and memory guarding
+
+In practice, most of them can be written in Rust. https://go.dev[Go] is also a possible choice which might be more familiar to developers (and is better suited to extract information from Go processes).
+
+## Consequences
+
+
+The container scanner is delivered as a container image that is deployed in OpenShift.
+This image must be build from a combination of programs written in Rust (the container scanner coordinator, and fingerprints), and in Go (other fingerprints).

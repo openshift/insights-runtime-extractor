@@ -7,3 +7,138 @@ The container images built from this repository provides an `insights-runtime-ex
 feature integrated to the https://github.com/openshift/insights-operator/tree/master[OpenShift Insights Operator].
 
 This feature was proposed and approved by https://github.com/openshift/enhancements/blob/master/enhancements/insights/insights-runtime-extractor.md[this enhancement].
+
+This repository is composed of multiple components:
+
+* `fingerprints` - a collection of self-contained executables that are executed in the container process namespaces to extract runtime information
+* `extractor` - the "core" engine that queries processes running in containers, detect the relevant fingerprints to run and coordinates their execution to extract information. It is composed of 2 executables:
+** the `coordinator`, running with high privileges, that does the extraction of the runtime information and store them on the file system.
+** the `extractor_server`, a simple TCP server that awaits for TCP connection to trigger an extraction from the `coordinator` and replies with the path of the extracted data on the file system.
+* `exporter` - the "public" access to the extractor. It is a HTTP server, that, upon an HTTP request, will trigger an extraction by connecting to the `extractor_server`. It then reads and aggregates all the runtime information from the file system and replies with a JSON payload.
+* `runtime-samples` - a collection of runtime projects to test the components in its end-to-end (e2e) test suite.
+
+This repository provides two container images:
+
+* the `exporter` container that runs the `exporter` HTTP server
+* the `extractor` container that runs the `extractor_server` executable and uses the `coordinator` and `fingerprints`
+  for the actual extraction of the runtime information
+
+Both containers are meant to run in a single pod and share their file system using a `volume`.
+
+## Build the container images for development
+
+[source,bash]
+----
+IMAGE_REGISTRY=quay.io/<my-user-name> make build-image
+----
+
+It builds 2 multi-arch image (amd64 & arm64) images:
+
+* `$IMAGE_REGISTRY/insights-runtime-extractor:latest`
+* `$IMAGE_REGISTRY/insights-runtime-exporter:latest`
+
+## Build the development image for Rust
+
+[source,bash]
+----
+make build-rust-dev-image
+----
+
+This creates a `rust-dev` Container image that contains all the Rust plumbing to compile and execute the code in `extractor`
+
+### Run the development image and compile the Rust code base
+
+[source,bash]
+----
+make rust-dev
+
+# you are then inside a container ready to compile the Rust code
+make
+----
+
+## Test the container images
+
+Prequesites:
+
+* To test the container images, you must have access to an OpenShift cluster and
+be logged in with a cluster admin account.
+
+To run the end-to-end (e2e) tests, run the command:
+
+[source,bash]
+----
+IMAGE_REGISTRY=quay.io/<my-user-name> make e2e-test
+----
+
+## Run the extractor
+
+Prequisites:
+
+* `curl`, `jq`, `oc` are installed on your machine
+* you must have access to an OpenShift cluster and be logged in with a *cluster admin* account
+
+To deploy the insights-runtime-extractor in the `default` namespace, run the commands:
+
+[source,bash]
+----
+oc project default
+oc apply -f https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/manifests/insights-runtime-extractor-scc.yaml
+oc apply -f https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/manifests/insights-runtime-extractor.yaml
+----
+
+Verify that it is properly deployed:
+
+[source,bash]
+----
+oc get daemonset -n default insights-runtime-extractor
+----
+
+It should display that all the daemonset pods are ready:
+
+[source,bash]
+----
+NAME                         DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR            AGE
+insights-runtime-extractor   2         2         2       2            2           kubernetes.io/os=linux   20m
+----
+
+Once the `insights-runtime-extractor` is ready, you can extract all the runtime info by running the script:
+
+[source,bash]
+----
+curl -s -L https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/scripts/extract.sh | bash -s
+---- 
+
+This command will output all the extracted runtime info organized by `namespace`, `pod` names and `container` ID:
+
+[source]
+----
+Extracting runtime info from insights-runtime-extractor-wt5nr...
+Extracting runtime info from insights-runtime-extractor-z74cp...
+{
+  "default": {
+    "insights-runtime-extractor-z74cp": {
+      "cri-o://0bfd3fcf6cbe8b4429bcc1a8d553a059434362943bd463473bcd113133b96cb8": {
+        "os": "rhel",
+        "osVersion": "9.4",
+        "kind": "Golang",
+        "kindVersion": "go1.22.6"
+      },
+      "cri-o://5e1adf8d60272f0489b4f58eb96116b8269d3bf88f4ec20436c1479833c32a44": {
+        "os": "rhel",
+        "osVersion": "9.4"
+      }
+    }
+  },
+  "kube-system": {
+    "konnectivity-agent-mm8jh": {
+      "cri-o://cc934f43953b724f97e57aa02d6c3518d1ddc92f996323d76db9f0a44ec620de": {
+        "os": "rhel",
+        "osVersion": "9.2",
+        "kind": "Golang",
+        "kindVersion": "go1.21.11 (Red Hat 1.21.11-1.el9_4) X:strictfipsruntime"
+      }
+    },
+  }
+  [...]
+}
+----

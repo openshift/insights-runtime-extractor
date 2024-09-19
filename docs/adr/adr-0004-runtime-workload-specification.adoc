@@ -1,0 +1,31 @@
+---
+status: "🔄 Proposed"
+creation-date: "2024-04-19"
+update-date: ""
+see-also: 
+replaces:
+superseded-by:
+---
+# Runtime Workload Specification
+
+## Context and Problem Statement
+
+In the context of OpenShift Insights Operator integration, the container scanner must output a stable representation of the workload runtime information so that the OpenShift Insights Operator can reliably read it and populate its own data model from this payload.
+
+## Decision
+
+To provide a stable representation of the  workload runtime information extracted by the container scanner, it has been decided to define its specification in the spec.adoc document at https://github.com/openshift/insights-runtime-extractor/blob/main/docs/spec.adoc.
+
+This is the contract for the integration in the OpenShift Insights Operator.
+
+## Consequences
+
+If the specification was meant to evolve to extract additional informations from the container scanner, its integration in the OpenShift Insights operator will have to be updated to feed any *new fields* in the operator own data model.
+
+Adding new *values* to the existing fields does not require any change for the integration in the OpenShift Insights Operator.
+
+The specification enables to have multiple runtimes informations so that Red Hat can have a deeper understanding of the runtime (eg this is running a Quarkus application that uses LangChain4J and Camel together). However, as we increase the number of reported runtimes, this increases the payloaed size of the data that is ultimately reported by the OpenShift Insighs Operator.
+
+## More Information
+
+* https://github.com/openshift/insights-operator/blob/master/docs/gathered-data.md#workloadinfo[Insights Operator WorkloadInfo data model]

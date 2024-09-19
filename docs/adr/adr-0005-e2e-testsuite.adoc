@@ -1,0 +1,44 @@
+---
+status: "🔄 Proposed"
+creation-date: "2024-04-23"
+update-date: ""
+see-also: 
+replaces:
+superseded-by:
+---
+# End-to-end Test Suite
+
+## Context and Problem Statement
+
+In the context of the integration in the OpenShift Insights Operator, facing the concern that the container scanner must not disrupt or lower the execution of the operator, it must provide an end-to-end (e2e) test suite to verify its capabilities in an actual OpenShift cluster to guarantee its quality before it is released and integrated into the Insights Operator.
+
+## Considered Options
+
+The container scanner must be tested and qualified before it is integrated in the OpenShift Insights Operator.
+Having an e2e test suite close to its code base will ensure that it can be run as often as required and verify its capabilities.
+
+The test suite will required to create workload that can be scanned and asserted. 
+A set of container images will have to be maintained or listed to test the various runtimes information that are extracted by the container scanner.
+The source of these test images MUST be maintained or listed so that they can evolve other time (eg if we want to make sure that we are able to detect the last version of a Red Hat product). Their maintenance is part of this e2e test suite maintenance when they have to be generated from source.
+
+There are some workloads that requires more than a container image (eg Kafka might need to install an operator) and the e2e test suite will have to provide test fixtures to realize the deployment of the workload to test.
+
+The e2e test suite will deploy the container scanner and the tested workload. It will then query the container scanner for information on a specific containers and verify these expectations.
+
+https://github.com/kubernetes-sigs/e2e-framework/tree/main[kubernetes-sigs/e2e-framework] is a framework written in Go that is well suited to write this e2e test suite.
+
+As the test suite will tests the container scanner through its image, the programming language of the container scanner has no bearing on the language of the test suite.
+
+Though it would be possible to write a similar test suite in Rust or other language, using Go, which is the de factor standard for Kubernetes, will result in a better productivity and reduce the maintenance cost of the test suite.
+
+## Decision
+
+The container scanner code base will provide an end-to-end (e2e) test suite in its `test/e2e` directory that will be able to verify the capabilites of the container scanner. The test suite is written in Go based on https://github.com/kubernetes-sigs/e2e-framework/tree/main[kubernetes-sigs/e2e-framework].
+
+The creation and provisioning of an OpenShift cluster to use for testing is out of scope and will be handled by a Continuous Integration Pipeline.
+
+## Consequences
+
+With that e2e test suite, the container scanner can verify its capabilities and catch regressions before it is released.
+
+However, there is a cost to maintain the test suite and the workloads that needs to be tested. In some cases, it can rely on existing images but there are cases where it will have to build container images corresponding to the workload to test (e.g. Quarkus or Spring Boot applications).

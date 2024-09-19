@@ -1,0 +1,31 @@
+---
+status: "{🔄 Proposed | ❌ Rejected | ✅ Accepted | 💤 Deprecated | … | ⤴️ Superseded}"
+creation-date: "YYYY-MM-DD"
+update-date: ""
+see-also: 
+replaces:
+superseded-by:
+---
+# <Title>
+
+## Context and Problem Statement
+
+What is the issue that we're seeing that is motivating this decision or change?
+
+## Considered Options
+
+Which are the options that are considered?
+
+## Decision
+
+What is the decision?
+
+In the context of <use case/user story u>, facing <concern c> we decided for <option o> to achieve <quality q>, accepting <downside d>.
+
+## Consequences
+
+What becomes easier or more difficult to do because of this change?
+
+## More Information
+
+Any related information.

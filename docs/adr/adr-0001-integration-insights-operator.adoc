@@ -1,0 +1,27 @@
+---
+status: 🔄 Proposed
+creation-date: "2024-04-18"
+update-date: "204-04-19"
+see-also:
+- "adr-0003-image-productization"
+replaces:
+superseded-by:
+---
+# Integration with Insights Operator
+
+## Status
+
+In Progress
+
+## Context
+
+We need to find the right location to collect runtime information on OpenShift and feed them back to Red Hat.
+
+## Decision
+
+https://github.com/openshift/insights-operator[Insights Operator] has been identified at the place to integrate the container scanner.
+It already has in place a data modeld and a workflow to "gather" cluster information and report them back to Red Hat.
+
+## Consequences
+
+An https://github.com/openshift/enhancements/pull/1584[enhancement] has been proposed to integrate the container scanner in the OpenShift Insights Operator. 
