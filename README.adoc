@@ -1,0 +1,9 @@
+# OpenShift Insights Runtime Extractor
+:toc:
+
+This repository provides a mechanism to gather runtime info from containers to get additional insights on user workloads and make investment decisions that will drive utilization.
+
+The container images built from this repository provides an `insights-runtime-extractor`
+feature integrated to the https://github.com/openshift/insights-operator/tree/master[OpenShift Insights Operator].
+
+This feature was proposed and approved by https://github.com/openshift/enhancements/blob/master/enhancements/insights/insights-runtime-extractor.md[this enhancement].
