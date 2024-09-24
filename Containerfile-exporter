@@ -1,0 +1,11 @@
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.22-openshift-4.18 AS go-builder
+
+WORKDIR /workspace/exporter
+COPY exporter .
+ARG GO_LDFLAGS=""
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
+
+FROM registry.ci.openshift.org/ocp/4.18:base-rhel9
+
+COPY --from=go-builder /workspace/exporter/bin/exporter /
+ENTRYPOINT [ "/exporter" ]
