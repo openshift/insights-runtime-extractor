@@ -15,3 +15,8 @@ e2e-test: build-image
 
 runtime-samples:
 	cd runtime-samples && make
+
+unit-tests:
+	cd fingerprints && make unit-tests
+	cd exporter && make unit-tests
+	cd extractor && make unit-tests
