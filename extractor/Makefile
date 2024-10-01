@@ -12,7 +12,7 @@ else
 endif
 
 setup:
-	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain 1.70.0 -y
+	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain 1.81.0 -y
 
 clean:
 	cargo clean

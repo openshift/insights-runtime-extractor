@@ -11,7 +11,7 @@ RUN chown dev:dev /home/dev
 # From here we run everything as dev user
 USER       dev
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain 1.81.0 -y
 ENV PATH="/home/dev/.cargo/bin:${PATH}"
 RUN bash -c 'if [ "$TARGETARCH" == "arm64" ]; then rustup target install aarch64-unknown-linux-musl ; else rustup target install x86_64-unknown-linux-musl; fi'
 
