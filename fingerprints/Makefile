@@ -10,5 +10,5 @@ build: clean
 	go build -o ./bin/fpr_native_executable cmd/fpr_native_executable/main.go
 	go build -o ./bin/fpr_os cmd/fpr_os/main.go
 
-test: build
+unit-tests: build
 	go test -v ./...

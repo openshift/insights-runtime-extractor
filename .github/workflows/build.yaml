@@ -15,17 +15,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build the extractor
+    - name: Unit Tests
       run: |-
-        cd ./extractor
-        cargo fmt -- --check
-        cargo build --release --verbose
-        cargo test --release --verbose
-    - name: Build the fingerprints
-      run: |-
-        cd ./fingerprints
-        make test
-    - name: Build the exporter
-      run: |-
-        cd ./exporter
-        make test
+        make unit-tests

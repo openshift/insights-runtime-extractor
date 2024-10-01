@@ -6,7 +6,7 @@ clean:
 build: clean
 	go build -o ./bin/exporter cmd/exporter/main.go
 
-test: build
+unit-tests: build
 	go test -v ./pkg/...
 
 run: build
