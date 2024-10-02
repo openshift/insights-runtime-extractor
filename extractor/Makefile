@@ -11,14 +11,11 @@ else
 	cargo build --release --target x86_64-unknown-linux-musl
 endif
 
-setup:
-	curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain 1.81.0 -y
-
 clean:
 	cargo clean
 
 unit-tests: build
 	cargo test
 
-check: setup
+check:
 	cargo fmt -- --check
