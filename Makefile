@@ -2,7 +2,7 @@
 .PHONY: runtime-samples
 
 build-rust-dev-image:
-	./scripts/build-dev.sh
+	./scripts/build-rust-dev.sh
 
 rust-dev:
 	./scripts/rust-dev.sh
