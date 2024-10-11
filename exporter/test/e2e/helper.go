@@ -88,6 +88,7 @@ func deployAndWaitForReadiness(obj k8s.Object, selector string) env.Func {
 		if err != nil {
 			return nil, err
 		}
+		fmt.Printf("Resource ready: %s/%s\n", obj.GetNamespace(), obj.GetName())
 		return ctx, nil
 	}
 }
@@ -138,7 +139,7 @@ func podsReady(client klient.Client, selector string) apimachinerywait.Condition
 	}
 }
 
-func getInsightsOperatorRuntimePodIPs(
+func getInsightsRuntimePodIPs(
 	ctx context.Context,
 	c *envconf.Config,
 	csNamespace string,
@@ -170,30 +171,30 @@ type namespacedContainerId struct {
 	containerId string
 }
 
-func scanContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid namespacedContainerId, nodeName string) types.ContainerRuntimeInfo {
+func extractRuntimeInfoFromContainer(ctx context.Context, g *Ω.WithT, c *envconf.Config, cid namespacedContainerId, nodeName string) types.ContainerRuntimeInfo {
 	client, err := c.NewClient()
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
-	curlPodName := getPod(ctx, c, g, insightsOperatorRuntimeNamespace, "app.kubernetes.io/name=curl-e2e").Name
+	curlPodName := getPod(ctx, c, g, insightsRuntimeExtractorNamespace, "app.kubernetes.io/name=curl-e2e").Name
 
-	containerScannerPodIPs, err := getInsightsOperatorRuntimePodIPs(ctx, c, insightsOperatorRuntimeNamespace, "app.kubernetes.io/name=insights-runtime-extractor-e2e")
+	insightsRuntimePodIPs, err := getInsightsRuntimePodIPs(ctx, c, insightsRuntimeExtractorNamespace, "app.kubernetes.io/name=insights-runtime-extractor-e2e")
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
 	var stdout, stderr bytes.Buffer
-	command := []string{"curl", "-s", "http://" + containerScannerPodIPs[nodeName] + ":8000/gather_runtime_info?hash=false"}
+	command := []string{"curl", "-s", "http://" + insightsRuntimePodIPs[nodeName] + ":8000/gather_runtime_info?hash=false"}
 
-	err = client.Resources().ExecInPod(ctx, insightsOperatorRuntimeNamespace, curlPodName, "curl", command, &stdout, &stderr)
+	err = client.Resources().ExecInPod(ctx, insightsRuntimeExtractorNamespace, curlPodName, "curl", command, &stdout, &stderr)
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 	g.Expect(stderr.String()).Should(Ω.BeEmpty())
 
 	output := stdout.String()
 	g.Expect(output).Should(Ω.Not(Ω.BeEmpty()))
 
-	var scanOutput map[string]map[string]map[string]types.ContainerRuntimeInfo
-	json.Unmarshal([]byte(output), &scanOutput)
+	var infoOutput map[string]map[string]map[string]types.ContainerRuntimeInfo
+	json.Unmarshal([]byte(output), &infoOutput)
 
-	container := scanOutput[cid.namespace][cid.podName][cid.containerId]
-	fmt.Println("got scanner result:", container)
+	container := infoOutput[cid.namespace][cid.podName][cid.containerId]
+	fmt.Println("Extracter runtime info:", container)
 
 	return container
 }

@@ -33,11 +33,11 @@ func TestPython3(t *testing.T) {
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 			return ctx
 		}).
-		Assess("is scanned", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("runtime info extracted", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			g := Ω.NewWithT(t)
 
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result := scanContainer(ctx, g, c, cid, nodeName)
+			result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
 			g.Expect(result).ShouldNot(Ω.BeNil())
 
 			g.Expect(result.Os).Should(Ω.Equal("debian"))
@@ -50,7 +50,7 @@ func TestPython3(t *testing.T) {
 
 			return ctx
 		})
-	_ = testEnv.Test(t, feature.Feature())
+	_ = testenv.Test(t, feature.Feature())
 }
 
 func newPython3AppDeployment(namespace string, name string, replicas int32, containerName string, image string) *appsv1.Deployment {
