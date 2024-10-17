@@ -14,55 +14,57 @@ import (
 )
 
 var (
-	testEnv env.Environment
-	// insightsOperatorRuntimeNamespace is the namespace where the container scanner is deployed
-	insightsOperatorRuntimeNamespace string
-	// namespace is the namespace where workloads are deployed before they are scanned
+	testenv env.Environment
+	// insightsOperatorRuntimeNamespace is the namespace where the insights runtime extractor is deployed
+	insightsRuntimeExtractorNamespace string
+	// namespace is the namespace where workloads are deployed before their runtime info are extracted
 	namespace string
-	// testedExtractorImage is the URL of the image for the insights-runtime-extractor's extractor
-	testedExtractorImage string
-	// testedExporterImage is the URL of the image for the insights-runtime-extractor's exporter
-	testedExporterImage string
 )
 
 func TestMain(m *testing.M) {
 	cfg, _ := envconf.NewFromFlags()
-	testEnv = env.NewWithConfig(cfg)
+	testenv = env.NewWithConfig(cfg)
 	namespace = "e2e-insights-runtime-extractor"
-	insightsOperatorRuntimeNamespace = os.Getenv("TEST_NAMESPACE")
-	testedExtractorImage = "ghcr.io/openshift/insights-runtime-extractor:latest"
-	testedExporterImage = "ghcr.io/openshift/insights-runtime-exporter:latest"
+	insightsRuntimeExtractorNamespace = os.Getenv("TEST_NAMESPACE")
+	testedExtractorImage := "insights-runtime-extractor:latest"
+	testedExporterImage := "insights-runtime-exporter:latest"
 	if imageRegistry, ok := os.LookupEnv("IMAGE_REGISTRY"); ok {
 		testedExtractorImage = imageRegistry + "/insights-runtime-extractor:latest"
 		testedExporterImage = imageRegistry + "/insights-runtime-exporter:latest"
 	}
+	if testingExtractorImage, ok := os.LookupEnv("INSIGHTS_RUNTIME_EXTRACTOR"); ok {
+		testedExtractorImage = testingExtractorImage
+	}
+	if testingExporterImage, ok := os.LookupEnv("INSIGHTS_RUNTIME_EXPORTER"); ok {
+		testedExporterImage = testingExporterImage
+	}
 
-	fmt.Printf("====\nTesting images:\n\t%s\n\t%s\n====\n", testedExtractorImage, testedExporterImage)
-	insightsOperatorRuntime := newContainerScannerDaemonSet()
+	fmt.Printf("#### Tested images:\n- %s\n- %s\n", testedExtractorImage, testedExporterImage)
+	insightsOperatorRuntime := newInsightsRuntimeExtractorDaemonSet(testedExtractorImage, testedExporterImage)
 	curl := newCurlDeployment()
 
-	testEnv.Setup(
+	testenv.Setup(
 		envfuncs.CreateNamespace(namespace),
 		deployAndWaitForReadiness(curl, "app.kubernetes.io/name=curl-e2e"),
 		deployAndWaitForReadiness(insightsOperatorRuntime, "app.kubernetes.io/name=insights-runtime-extractor-e2e"),
 	)
 
-	testEnv.Finish(
+	testenv.Finish(
 		undeploy(insightsOperatorRuntime),
 		undeploy(curl),
 		envfuncs.DeleteNamespace(namespace),
 	)
 
-	os.Exit(testEnv.Run(m))
+	os.Exit(testenv.Run(m))
 }
 
-func newContainerScannerDaemonSet() *appsv1.DaemonSet {
+func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExporterImage string) *appsv1.DaemonSet {
 	securityContextPrivileged := true
 	hostPathSocket := corev1.HostPathSocket
 	labels := map[string]string{"app.kubernetes.io/name": "insights-runtime-extractor-e2e"}
 
 	return &appsv1.DaemonSet{
-		ObjectMeta: metav1.ObjectMeta{Name: "insights-runtime-extractor-e2e", Namespace: insightsOperatorRuntimeNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: "insights-runtime-extractor-e2e", Namespace: insightsRuntimeExtractorNamespace},
 		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
@@ -126,7 +128,7 @@ func newCurlDeployment() *appsv1.Deployment {
 	labels := map[string]string{"app.kubernetes.io/name": "curl-e2e"}
 
 	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{Name: "curl-e2e", Namespace: insightsOperatorRuntimeNamespace},
+		ObjectMeta: metav1.ObjectMeta{Name: "curl-e2e", Namespace: insightsRuntimeExtractorNamespace},
 		Spec: appsv1.DeploymentSpec{
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,

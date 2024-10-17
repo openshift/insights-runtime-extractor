@@ -28,7 +28,6 @@ func TestCentOs7(t *testing.T) {
 }
 
 func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOsVersion string) {
-
 	appName := envconf.RandomName("os", 10)
 	containerName := "main"
 	deployment := newBaseImageDeployment(namespace, appName, 1, containerName, baseImage)
@@ -46,10 +45,10 @@ func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOs
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 			return ctx
 		}).
-		Assess("is scanned", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("runtime info extracted", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			g := Ω.NewWithT(t)
 			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result := scanContainer(ctx, g, c, cid, nodeName)
+			result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
 			g.Expect(result).ShouldNot(Ω.BeNil())
 
 			g.Expect(result.Os).Should(Ω.Equal(expectedOs))
@@ -62,7 +61,7 @@ func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOs
 
 			return ctx
 		})
-	_ = testEnv.Test(t, feature.Feature())
+	_ = testenv.Test(t, feature.Feature())
 }
 
 func newBaseImageDeployment(namespace string, name string, replicas int32, containerName string, image string) *appsv1.Deployment {
