@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>runtime-samples</groupId>
-    <artifactId>upstream-quarkus</artifactId>
+    <groupId>insights-runtime-extractor-samples</groupId>
+    <artifactId>quarkus</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
@@ -15,6 +15,8 @@
         <quarkus.platform.version>3.13.0</quarkus.platform.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
+        <quarkus.container-image.push>true</quarkus.container-image.push>
+        <quarkus.container-image.image>quay.io/insights-runtime-extractor-samples/quarkus:${quarkus.platform.version}</quarkus.container-image.image>
     </properties>
 
     <dependencyManagement>
