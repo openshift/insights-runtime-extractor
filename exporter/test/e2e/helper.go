@@ -194,7 +194,8 @@ func extractRuntimeInfoFromContainer(ctx context.Context, g *Ω.WithT, c *envcon
 	json.Unmarshal([]byte(output), &infoOutput)
 
 	container := infoOutput[cid.namespace][cid.podName][cid.containerId]
-	fmt.Println("Extracter runtime info:", container)
+	g.Expect(container).ShouldNot(Ω.BeNil())
+	fmt.Println("Extracted runtime info:", container)
 
 	return container
 }
