@@ -132,7 +132,7 @@ func TestQuarkus_3_15_1(t *testing.T) {
 			g.Expect(result.Os).Should(Ω.Equal("rhel"))
 			g.Expect(result.OsVersion).Should(Ω.Equal("8.10"))
 			g.Expect(result.Kind).Should(Ω.Equal("Java"))
-			g.Expect(result.KindVersion).Should(Ω.Equal("21.0.5"))
+			g.Expect(result.KindVersion).Should(Ω.Equal("21.0.4"))
 			g.Expect(result.KindImplementer).Should(Ω.Equal("Red Hat, Inc."))
 
 			g.Expect(len(result.Runtimes)).To(Ω.Equal(1))

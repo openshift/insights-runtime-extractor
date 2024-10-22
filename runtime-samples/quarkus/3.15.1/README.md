@@ -18,7 +18,7 @@ For the OpenJDK image:
   "os": "rhel",
   "osVersion": "8.10",
   "kind": "Java",
-  "kindVersion": "21.0.5",
+  "kindVersion": "21.0.4",
   "kindImplementer": "Red Hat, Inc.",
   "runtimes": [ 
     {

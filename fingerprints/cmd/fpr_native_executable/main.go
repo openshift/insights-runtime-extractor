@@ -16,6 +16,10 @@ import (
 	"fingerprints/pkg/utils"
 )
 
+const (
+	quarkusVersionPrefix = "__quarkus_analytics__quarkus.version="
+)
+
 func main() {
 	// The program has parameters:
 	// - 1 - the subdirectory to write the manifest to
@@ -65,14 +69,10 @@ func main() {
 		entries["runtime-kind"] = "GraalVM"
 		utils.WriteEntries(outputDir, "runtime-kind.txt", entries)
 
-		containsQuarkusStrings, err := checkQuarkusStrings(path)
-		if err != nil {
-			return
-		}
-		if containsQuarkusStrings {
-
+		found, quarkusVersion := checkQuarkusStrings(path)
+		if found {
 			runtimeEntries := make(map[string]string)
-			runtimeEntries["Quarkus"] = ""
+			runtimeEntries["Quarkus"] = quarkusVersion
 			utils.WriteEntries(outputDir, "quarkus-fingerprints.txt", runtimeEntries)
 
 		}
@@ -82,19 +82,24 @@ func main() {
 	}
 }
 
-func checkQuarkusStrings(executable string) (bool, error) {
+func checkQuarkusStrings(executable string) (bool, string) {
 	file, err := os.Open(executable)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
-	found := get_strings(file, 14, 14, true)
-	for _, str := range found {
-		if strings.Contains(str, "quarkus.native") {
-			return true, nil
+	allStrings := get_strings(file, 14, 52, true)
+	found := false
+	quarkusVersion := ""
+	for _, str := range allStrings {
+		if strings.HasPrefix(str, quarkusVersionPrefix) {
+			found = true
+			quarkusVersion = strings.TrimPrefix(str, quarkusVersionPrefix)
+		} else if strings.Contains(str, "quarkus.native") {
+			found = true
 		}
 	}
-	return false, nil
+	return found, quarkusVersion
 }
 
 func checkGraalVMExecutable(executable string) (bool, error) {
