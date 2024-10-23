@@ -95,8 +95,13 @@ jar
 
 ### GraalVM Runtimes Fingerprints
 
-If the executable is detected as a `GraalVM` runtime kind and the `quarkus.native` string is present
+If the executable is detected as a `GraalVM` runtime kind
+
+#### Native Quarkus
+
+If the native executable contains either the string `quarkus.native` or `__quarkus_analytics__quarkus.version`
 
 * stored in the data model as a runtime:
 ** the name of the runtime is `Quarkus`
-** the version is not set
+** the version is extracted from the string starting with `__quarkus_analytics__quarkus.version`. If this string
+   is not found (for version of Quarkus older than 3.15.0), the version is not set

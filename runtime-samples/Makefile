@@ -1,15 +1,15 @@
-.PHONY: golang-app upstream-quarkus spring-boot
+.PHONY: golang-app quarkus-3.13.0 quarkus-3.15.1 spring-boot
 
-all: upstream-quarkus spring-boot golang-app
+all: quarkus-3.13.0 quarkus-3.15.1 spring-boot golang-app
 
-golang-app: setup
+golang-app:
 	cd ./golang-app && make
 
-upstream-quarkus: setup
-	cd ./upstream-quarkus && make
+quarkus-3.13.0:
+	cd ./quarkus/3.13.0. && make
 
-spring-boot: setup
+quarkus-3.15.1:
+	cd ./quarkus/3.15.1 && make
+
+spring-boot:
 	cd ./spring-boot && make
-
-setup:
-	./setup.sh
