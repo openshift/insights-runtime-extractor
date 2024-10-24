@@ -92,6 +92,21 @@ func FindExecutableInPath(executable string, pathEnvVar string) (string, error) 
 	return "", fmt.Errorf("executable %s not found in PATH", executable)
 }
 
+func ReadManifest(content string) map[string]string {
+	manifestEntries := make(map[string]string)
+	currentKey := ""
+	for _, entry := range strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n") {
+		key, value, keyFound := strings.Cut(entry, ": ")
+		if keyFound {
+			manifestEntries[key] = value
+			currentKey = key
+		} else {
+			manifestEntries[currentKey] = manifestEntries[currentKey] + strings.TrimLeft(entry, " ")
+		}
+	}
+	return manifestEntries
+}
+
 func GetJarManifest(jarPath string) (map[string]string, error) {
 	r, err := zip.OpenReader(jarPath)
 	if err != nil {
@@ -114,18 +129,7 @@ func GetJarManifest(jarPath string) (map[string]string, error) {
 
 			manifestContent := buffer.String()
 
-			manifestEntries := make(map[string]string)
-			currentKey := ""
-			for _, entry := range strings.Split(strings.ReplaceAll(manifestContent, "\r\n", "\n"), "\n") {
-				key, value, keyFound := strings.Cut(entry, ": ")
-				if keyFound {
-					manifestEntries[key] = value
-					currentKey = key
-				} else {
-					manifestEntries[currentKey] = manifestEntries[currentKey] + strings.TrimLeft(entry, " ")
-				}
-			}
-			return manifestEntries, nil
+			return ReadManifest(manifestContent), nil
 		}
 	}
 

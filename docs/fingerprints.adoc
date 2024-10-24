@@ -93,6 +93,17 @@ jar
 ** the name of the runtime is `Apache Tomcat`
 ** the version corresponds to the extracted `Implementation-Version`
 
+#### WildFly & JBoss EAP
+
+If the java process is a jar-executable with "jboss-modules.jar" and there is a `jboss.home.dir` System properties in the process command line
+
+* extracted from 2 successive locations:
+** `<jboss.home.dir>/version.txt`
+** `<jboss.home.dir>/modules/system/layers/base/org/jboss/as/product/main/dir/META-INF/MANIFEST.MF
+
+* stored in the data model as a runtime:
+** the name of the runtime is `WildFly Full` or `Red Hat JBoss Enterprise Application Platform`
+
 ### GraalVM Runtimes Fingerprints
 
 If the executable is detected as a `GraalVM` runtime kind
