@@ -7,6 +7,36 @@ use crate::insights_runtime_extractor::ContainerProcess;
 pub struct Java {}
 
 impl Java {
+    /// Check if the Java process is started with a jboss.home.dir system property
+    fn jboss_modules_executable(
+        out_dir: &String,
+        process: &ContainerProcess,
+    ) -> Option<Vec<String>> {
+        debug!(
+            "Process {} is using JBoss Modules with command line {:#?}",
+            &process.pid, &process.command_line
+        );
+
+        return process
+            .command_line
+            .iter()
+            .position(|s| s.starts_with("-Djboss.home.dir"))
+            .and_then(|i| process.command_line.get(i))
+            .and_then(|jboss_home_dir_sys_prop| jboss_home_dir_sys_prop.split_once("="))
+            .and_then(|(_, jboss_home_dir)| {
+                debug!(
+                    "Process {} is using JBoss Module from JBoss Home {:#?}",
+                    &process.pid, jboss_home_dir
+                );
+
+                Some(vec![
+                    String::from("./fpr_java_jboss_modules"),
+                    out_dir.to_string(),
+                    jboss_home_dir.to_string(),
+                ])
+            });
+    }
+
     fn jar_executable(
         out_dir: &String,
         process: &ContainerProcess,
@@ -46,7 +76,11 @@ impl FingerPrint for Java {
             .and_then(|i| process.command_line.get(i + 1))
             .and_then(|jar| {
                 debug!("Executable jar is {:?}", jar);
-                return Java::jar_executable(&out_dir, process, jar);
+                if jar.ends_with("jboss-modules.jar") {
+                    return Java::jboss_modules_executable(&out_dir, process);
+                } else {
+                    return Java::jar_executable(&out_dir, process, jar);
+                }
             });
 
         if exec.is_some() {

@@ -8,27 +8,28 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-func TestSpringBoot(t *testing.T) {
+func TestWildFly_30_0_1_Final(t *testing.T) {
 
-	appName := "spring-boot"
+	appName := "wildfly-app"
 	containerName := "main"
-	image := "quay.io/insights-runtime-extractor-samples/spring-boot:3.1.4"
+	// corresponded to quay.io/wildfly/wildfly:30.0.1.Final-jdk20
+	image := "quay.io/wildfly/wildfly@sha256:4b51924efea743d48685eb2065c33d21f818fb9c5acc7139dc47e5b810610e3b"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
-	feature := features.New("Spring Boot from "+image).
+	feature := features.New("WildFly from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
 		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
-				Os:              "ubuntu",
-				OsVersion:       "20.04",
+				Os:              "rhel",
+				OsVersion:       "9.2",
 				Kind:            "Java",
-				KindVersion:     "17.0.12",
+				KindVersion:     "20.0.2",
 				KindImplementer: "Eclipse Adoptium",
 				Runtimes: []types.RuntimeComponent{
 					types.RuntimeComponent{
-						Name:    "Spring Boot",
-						Version: "3.1.4",
+						Name:    "WildFly Full",
+						Version: "30.0.1.Final",
 					},
 				},
 			}
