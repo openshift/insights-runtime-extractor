@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"testing"
 	"time"
 
 	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
@@ -104,6 +105,40 @@ func undeploy(obj k8s.Object) env.Func {
 		}
 
 		return ctx, nil
+	}
+}
+
+func deployTestResource(deployment *appsv1.Deployment, appName string) func(context.Context, *testing.T, *envconf.Config) context.Context {
+	return func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		g := Ω.NewWithT(t)
+
+		ctx, err := deployAndWaitForReadiness(deployment, "app="+appName)(ctx, c)
+		g.Expect(err).ShouldNot(Ω.HaveOccurred())
+		return ctx
+	}
+}
+
+func undeployTestResource(deployment *appsv1.Deployment, appName string) func(context.Context, *testing.T, *envconf.Config) context.Context {
+	return func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		g := Ω.NewWithT(t)
+
+		ctx, err := undeploy(deployment)(ctx, c)
+		g.Expect(err).ShouldNot(Ω.HaveOccurred())
+		return ctx
+	}
+}
+
+func checkExtractedRuntimeInfo(namespace string, appName string, container string, check func(*Ω.WithT, types.ContainerRuntimeInfo)) func(context.Context, *testing.T, *envconf.Config) context.Context {
+	return func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		g := Ω.NewWithT(t)
+
+		cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, container)
+		result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
+		g.Expect(result).ShouldNot(Ω.BeNil())
+
+		check(g, result)
+
+		return ctx
 	}
 }
 

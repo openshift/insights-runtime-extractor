@@ -1,12 +1,11 @@
 package e2e
 
 import (
-	"context"
+	"exporter/pkg/types"
 	"testing"
 
 	Ω "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
@@ -19,37 +18,17 @@ func TestPython3(t *testing.T) {
 	deployment := newPython3AppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Python3 from base image "+image).
-		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+			g.Expect(runtimeInfo.Os).Should(Ω.Equal("debian"))
+			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal("12"))
+			g.Expect(runtimeInfo.Kind).Should(Ω.Equal("Python"))
+			g.Expect(runtimeInfo.KindVersion).Should(Ω.Equal("Python 3.9.19"))
+			g.Expect(runtimeInfo.KindImplementer).Should(Ω.BeEmpty())
 
-			ctx, err := deployAndWaitForReadiness(deployment, "app="+appName)(ctx, c)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
-			return ctx
-		}).
-		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-
-			ctx, err := undeploy(deployment)(ctx, c)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
-			return ctx
-		}).
-		Assess("runtime info extracted", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-
-			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
-			g.Expect(result).ShouldNot(Ω.BeNil())
-
-			g.Expect(result.Os).Should(Ω.Equal("debian"))
-			g.Expect(result.OsVersion).Should(Ω.Equal("12"))
-			g.Expect(result.Kind).Should(Ω.Equal("Python"))
-			g.Expect(result.KindVersion).Should(Ω.Equal("Python 3.9.19"))
-			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
-
-			g.Expect(len(result.Runtimes)).To(Ω.Equal(0))
-
-			return ctx
-		})
+			g.Expect(len(runtimeInfo.Runtimes)).To(Ω.Equal(0))
+		}))
 	_ = testenv.Test(t, feature.Feature())
 }
 

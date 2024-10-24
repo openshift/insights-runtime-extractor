@@ -1,12 +1,11 @@
 package e2e
 
 import (
-	"context"
+	"exporter/pkg/types"
 	"testing"
 
 	Ω "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
@@ -18,32 +17,15 @@ func TestNodeJS(t *testing.T) {
 	deployment := newNodeAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Node.js from base image "+image).
-		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-			ctx, err := deployAndWaitForReadiness(deployment, "app="+appName)(ctx, c)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
-			return ctx
-		}).
-		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-			ctx, err := undeploy(deployment)(ctx, c)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
-			return ctx
-		}).
-		Assess("runtime info extracted", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
-			g.Expect(result).ShouldNot(Ω.BeNil())
-
-			g.Expect(result.Os).Should(Ω.Equal("alpine"))
-			g.Expect(result.OsVersion).Should(Ω.Equal("3.20.2"))
-			g.Expect(result.Kind).Should(Ω.Equal("Node.js"))
-			g.Expect(result.KindVersion).Should(Ω.Equal("v22.6.0"))
-			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
-
-			return ctx
-		})
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+			g.Expect(runtimeInfo.Os).Should(Ω.Equal("alpine"))
+			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal("3.20.2"))
+			g.Expect(runtimeInfo.Kind).Should(Ω.Equal("Node.js"))
+			g.Expect(runtimeInfo.KindVersion).Should(Ω.Equal("v22.6.0"))
+			g.Expect(runtimeInfo.KindImplementer).Should(Ω.BeEmpty())
+		}))
 	_ = testenv.Test(t, feature.Feature())
 }
 
