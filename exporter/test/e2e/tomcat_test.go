@@ -20,16 +20,20 @@ func TestTomcat(t *testing.T) {
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
 		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
-			g.Expect(runtimeInfo.Os).Should(Ω.Equal("ubuntu"))
-			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal("24.04"))
-			g.Expect(runtimeInfo.Kind).Should(Ω.Equal("Java"))
-			g.Expect(runtimeInfo.KindVersion).Should(Ω.Equal("21.0.4"))
-			g.Expect(runtimeInfo.KindImplementer).Should(Ω.Equal("Eclipse Adoptium"))
-
-			g.Expect(len(runtimeInfo.Runtimes)).To(Ω.Equal(1))
-			runtime := runtimeInfo.Runtimes[0]
-			g.Expect(runtime.Name).To(Ω.Equal("Apache Tomcat"))
-			g.Expect(runtime.Version).To(Ω.Equal("11.0.0-M22"))
+			expected := types.ContainerRuntimeInfo{
+				Os:              "ubuntu",
+				OsVersion:       "24.04",
+				Kind:            "Java",
+				KindVersion:     "21.0.4",
+				KindImplementer: "Eclipse Adoptium",
+				Runtimes: []types.RuntimeComponent{
+					types.RuntimeComponent{
+						Name:    "Apache Tomcat",
+						Version: "11.0.0-M22",
+					},
+				},
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
 	_ = testenv.Test(t, feature.Feature())
 }
@@ -45,16 +49,20 @@ func TestJBossWebServer(t *testing.T) {
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
 		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
-			g.Expect(runtimeInfo.Os).Should(Ω.Equal("rhel"))
-			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal("8.10"))
-			g.Expect(runtimeInfo.Kind).Should(Ω.Equal("Java"))
-			g.Expect(runtimeInfo.KindVersion).Should(Ω.Equal("17.0.12"))
-			g.Expect(runtimeInfo.KindImplementer).Should(Ω.Equal("Red Hat, Inc."))
-
-			g.Expect(len(runtimeInfo.Runtimes)).To(Ω.Equal(1))
-			runtime := runtimeInfo.Runtimes[0]
-			g.Expect(runtime.Name).To(Ω.Equal("Apache Tomcat"))
-			g.Expect(runtime.Version).To(Ω.Equal("9.0.87.redhat-00003"))
+			expected := types.ContainerRuntimeInfo{
+				Os:              "rhel",
+				OsVersion:       "8.10",
+				Kind:            "Java",
+				KindVersion:     "17.0.12",
+				KindImplementer: "Red Hat, Inc.",
+				Runtimes: []types.RuntimeComponent{
+					types.RuntimeComponent{
+						Name:    "Apache Tomcat",
+						Version: "9.0.87.redhat-00003",
+					},
+				},
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
 	_ = testenv.Test(t, feature.Feature())
 }

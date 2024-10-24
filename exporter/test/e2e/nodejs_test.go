@@ -20,11 +20,13 @@ func TestNodeJS(t *testing.T) {
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
 		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
-			g.Expect(runtimeInfo.Os).Should(Ω.Equal("alpine"))
-			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal("3.20.2"))
-			g.Expect(runtimeInfo.Kind).Should(Ω.Equal("Node.js"))
-			g.Expect(runtimeInfo.KindVersion).Should(Ω.Equal("v22.6.0"))
-			g.Expect(runtimeInfo.KindImplementer).Should(Ω.BeEmpty())
+			expected := types.ContainerRuntimeInfo{
+				Os:          "alpine",
+				OsVersion:   "3.20.2",
+				Kind:        "Node.js",
+				KindVersion: "v22.6.0",
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
 	_ = testenv.Test(t, feature.Feature())
 }

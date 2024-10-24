@@ -36,13 +36,12 @@ func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOs
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
 		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
-			g.Expect(runtimeInfo.Os).Should(Ω.Equal(expectedOs))
-			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal(expectedOsVersion))
-			g.Expect(runtimeInfo.Kind).Should(Ω.BeEmpty())
-			g.Expect(runtimeInfo.KindVersion).Should(Ω.BeEmpty())
-			g.Expect(runtimeInfo.KindImplementer).Should(Ω.BeEmpty())
 
-			g.Expect(len(runtimeInfo.Runtimes)).To(Ω.Equal(0))
+			expected := types.ContainerRuntimeInfo{
+				Os:        expectedOs,
+				OsVersion: expectedOsVersion,
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
 	_ = testenv.Test(t, feature.Feature())
 }
