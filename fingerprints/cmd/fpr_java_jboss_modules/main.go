@@ -11,10 +11,12 @@ import (
 )
 
 const (
-	versionDelimiter           = "- Version"
-	productManifestPath        = "modules/system/layers/base/org/jboss/as/product/main/dir/META-INF/MANIFEST.MF"
-	jbossProductReleaseName    = "JBoss-Product-Release-Name"
-	jbossProductReleaseVersion = "JBoss-Product-Release-Version"
+	versionDelimiter                    = "- Version"
+	productManifestPath                 = "modules/system/layers/base/org/jboss/as/product/main/dir/META-INF/MANIFEST.MF"
+	productMainPath                     = "/modules/system/layers/base/org/jboss/as/product/main/"
+	wildflyFeaturePackProductConfPrefix = "wildfly-feature-pack-product-conf"
+	jbossProductReleaseName             = "JBoss-Product-Release-Name"
+	jbossProductReleaseVersion          = "JBoss-Product-Release-Version"
 )
 
 func main() {
@@ -49,7 +51,28 @@ func main() {
 		}
 	}
 
-	utils.WriteEntries(outputDir, "java-jboss-modules-fingerprints.txt", entries)
+	if !foundRuntime {
+		// more recent versions of WildFly store this info in the Manifest of wildfly-feature-pack-product-conf jar
+		productMainDir := filepath.Join(jbossHomeDir, productMainPath)
+		_ = filepath.Walk(productMainDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() && strings.HasPrefix(info.Name(), wildflyFeaturePackProductConfPrefix) && strings.HasSuffix(info.Name(), ".jar") {
+				manifestEntries, err := utils.GetJarManifest(path)
+				if err != nil {
+					return err
+				}
+				entries[manifestEntries[jbossProductReleaseName]] = manifestEntries[jbossProductReleaseVersion]
+				foundRuntime = true
+			}
+			return nil
+		})
+	}
+
+	if len(entries) > 0 {
+		utils.WriteEntries(outputDir, "java-jboss-modules-fingerprints.txt", entries)
+	}
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
 	log.Printf("🕑 Java JBoss Modules fingerprint executed in time: %s\n", duration)
