@@ -128,11 +128,11 @@ func undeployTestResource(deployment *appsv1.Deployment, appName string) func(co
 	}
 }
 
-func checkExtractedRuntimeInfo(namespace string, appName string, container string, check func(*Ω.WithT, types.ContainerRuntimeInfo)) func(context.Context, *testing.T, *envconf.Config) context.Context {
+func checkExtractedRuntimeInfo(namespace string, selector string, container string, check func(*Ω.WithT, types.ContainerRuntimeInfo)) func(context.Context, *testing.T, *envconf.Config) context.Context {
 	return func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 		g := Ω.NewWithT(t)
 
-		cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, container)
+		cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, selector, container)
 		result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
 		g.Expect(result).ShouldNot(Ω.BeNil())
 

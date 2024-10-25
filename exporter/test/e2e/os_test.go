@@ -35,7 +35,7 @@ func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOs
 	feature := features.New("base image "+baseImage).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 
 			expected := types.ContainerRuntimeInfo{
 				Os:        expectedOs,
