@@ -8,6 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/e2e-framework/klient/conf"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
@@ -22,7 +23,8 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	cfg, _ := envconf.NewFromFlags()
+	path := conf.ResolveKubeConfigFile()
+	cfg := envconf.NewWithKubeConfig(path)
 	testenv = env.NewWithConfig(cfg)
 	namespace = "e2e-insights-runtime-extractor"
 	insightsRuntimeExtractorNamespace = os.Getenv("TEST_NAMESPACE")

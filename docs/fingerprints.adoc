@@ -97,12 +97,13 @@ jar
 
 If the java process is a jar-executable with "jboss-modules.jar" and there is a `jboss.home.dir` System properties in the process command line
 
-* extracted from 2 successive locations:
+* extracted from 3 successive locations:
 ** `<jboss.home.dir>/version.txt`
 ** `<jboss.home.dir>/modules/system/layers/base/org/jboss/as/product/main/dir/META-INF/MANIFEST.MF
+** The manifest of the `wildfly-feature-pack-product-conf` jar located in `<jboss.home.dir>/modules/system/layers/base/org/jboss/as/product/main/
 
 * stored in the data model as a runtime:
-** the name of the runtime is `WildFly Full` or `Red Hat JBoss Enterprise Application Platform`
+** the name of the runtime is `WildFly`, `WildFly Full` or `Red Hat JBoss Enterprise Application Platform`
 
 ### GraalVM Runtimes Fingerprints
 
