@@ -13,7 +13,7 @@ import (
 const (
 	versionDelimiter                    = "- Version"
 	productManifestPath                 = "modules/system/layers/base/org/jboss/as/product/main/dir/META-INF/MANIFEST.MF"
-	productMainPath                     = "/modules/system/layers/base/org/jboss/as/product/main/"
+	productMainPath                     = "modules/system/layers/base/org/jboss/as/product/main/"
 	wildflyFeaturePackProductConfPrefix = "wildfly-feature-pack-product-conf"
 	jbossProductReleaseName             = "JBoss-Product-Release-Name"
 	jbossProductReleaseVersion          = "JBoss-Product-Release-Version"
@@ -32,7 +32,7 @@ func main() {
 	entries := make(map[string]string)
 
 	foundRuntime := false
-	if found, content := readFile(filepath.Join(jbossHomeDir, "version.txt")); found {
+	if found, content := utils.ReadFile(filepath.Join(jbossHomeDir, "version.txt")); found {
 		parts := strings.Split(content, versionDelimiter)
 		if len(parts) == 2 {
 			name := strings.TrimSpace(parts[0])
@@ -44,7 +44,7 @@ func main() {
 	if !foundRuntime {
 		// version.txt does not exist, let's look at $JBOSS_HOME/modules/system/layers/base/org/jboss/as/product/main/dir/META-INF/MANIFEST.MF
 		manifestPath := filepath.Join(jbossHomeDir, productManifestPath)
-		if found, content := readFile(manifestPath); found {
+		if found, content := utils.ReadFile(manifestPath); found {
 			manifestEntries := utils.ReadManifest(content)
 			entries[manifestEntries[jbossProductReleaseName]] = manifestEntries[jbossProductReleaseVersion]
 			foundRuntime = true
@@ -76,15 +76,4 @@ func main() {
 	endTime := time.Now()
 	duration := endTime.Sub(startTime)
 	log.Printf("🕑 Java JBoss Modules fingerprint executed in time: %s\n", duration)
-}
-
-func readFile(path string) (bool, string) {
-	content, error := os.ReadFile(path)
-
-	// Check whether the 'error' is nil or not. If it
-	//is not nil, then print the error and exit.
-	if error != nil {
-		return false, ""
-	}
-	return true, string(content)
 }

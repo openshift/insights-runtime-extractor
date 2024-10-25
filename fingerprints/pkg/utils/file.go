@@ -107,6 +107,13 @@ func ReadManifest(content string) map[string]string {
 	return manifestEntries
 }
 
+func ReadFile(path string) (bool, string) {
+	if content, error := os.ReadFile(path); error == nil {
+		return true, string(content)
+	}
+	return false, ""
+}
+
 func GetJarManifest(jarPath string) (map[string]string, error) {
 	r, err := zip.OpenReader(jarPath)
 	if err != nil {
