@@ -25,12 +25,10 @@ func TestSpringBoot(t *testing.T) {
 				Kind:            "Java",
 				KindVersion:     "17.0.12",
 				KindImplementer: "Eclipse Adoptium",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "Spring Boot",
-						Version: "3.1.4",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Spring Boot",
+					Version: "3.1.4",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))

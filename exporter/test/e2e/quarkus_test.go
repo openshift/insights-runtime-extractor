@@ -25,12 +25,10 @@ func TestQuarkus_3_13_0(t *testing.T) {
 				Kind:            "Java",
 				KindVersion:     "17.0.12",
 				KindImplementer: "Red Hat, Inc.",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "Quarkus",
-						Version: "3.13.0",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Quarkus",
+					Version: "3.13.0",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
@@ -52,11 +50,9 @@ func TestNativeQuarkus_3_13_0(t *testing.T) {
 				Os:        "rhel",
 				OsVersion: "8.9",
 				Kind:      "GraalVM",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name: "Quarkus",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name: "Quarkus",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
@@ -80,12 +76,10 @@ func TestQuarkus_3_15_1(t *testing.T) {
 				Kind:            "Java",
 				KindVersion:     "21.0.4",
 				KindImplementer: "Red Hat, Inc.",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "Quarkus",
-						Version: "3.15.1",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Quarkus",
+					Version: "3.15.1",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
@@ -107,12 +101,10 @@ func TestNativeQuarkus_3_15_1(t *testing.T) {
 				Os:        "rhel",
 				OsVersion: "8.10",
 				Kind:      "GraalVM",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "Quarkus",
-						Version: "3.15.1",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Quarkus",
+					Version: "3.15.1",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))

@@ -26,12 +26,10 @@ func TestWildFly_30_0_1_Final(t *testing.T) {
 				Kind:            "Java",
 				KindVersion:     "20.0.2",
 				KindImplementer: "Eclipse Adoptium",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "WildFly Full",
-						Version: "30.0.1.Final",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "WildFly Full",
+					Version: "30.0.1.Final",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
@@ -56,12 +54,10 @@ func TestWildFly_34_0_0_Final(t *testing.T) {
 				Kind:            "Java",
 				KindVersion:     "21.0.4",
 				KindImplementer: "Eclipse Adoptium",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "WildFly",
-						Version: "34.0.0.Final",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "WildFly",
+					Version: "34.0.0.Final",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))

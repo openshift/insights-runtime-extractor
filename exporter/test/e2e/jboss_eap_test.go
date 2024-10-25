@@ -25,12 +25,10 @@ func TestJBossEAP_(t *testing.T) {
 				OsVersion: "8.10",
 				Kind:      "Java",
 				// older versions of Java do not have the $JAVA_HOME/release to identify their versions and implementers
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "Red Hat JBoss Enterprise Application Platform",
-						Version: "7.4.19.GA",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Red Hat JBoss Enterprise Application Platform",
+					Version: "7.4.19.GA",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))

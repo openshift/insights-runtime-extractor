@@ -26,12 +26,10 @@ func TestTomcat(t *testing.T) {
 				Kind:            "Java",
 				KindVersion:     "21.0.4",
 				KindImplementer: "Eclipse Adoptium",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "Apache Tomcat",
-						Version: "11.0.0-M22",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Apache Tomcat",
+					Version: "11.0.0-M22",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
@@ -55,12 +53,10 @@ func TestJBossWebServer(t *testing.T) {
 				Kind:            "Java",
 				KindVersion:     "17.0.12",
 				KindImplementer: "Red Hat, Inc.",
-				Runtimes: []types.RuntimeComponent{
-					types.RuntimeComponent{
-						Name:    "Apache Tomcat",
-						Version: "9.0.87.redhat-00003",
-					},
-				},
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Apache Tomcat",
+					Version: "9.0.87.redhat-00003",
+				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
