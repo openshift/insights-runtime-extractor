@@ -82,10 +82,10 @@ func deployAndWaitForReadiness(obj k8s.Object, selector string) env.Func {
 		if err != nil {
 			return nil, err
 		}
-		if err = client.Resources().Create(ctx, obj); err != nil {
+		if err = client.Resources(obj.GetNamespace()).Create(ctx, obj); err != nil {
 			return nil, err
 		}
-		err = wait.For(podsReady(client, selector), wait.WithTimeout(time.Minute*5))
+		err = wait.For(podsReady(client, obj.GetNamespace(), selector), wait.WithTimeout(time.Minute*5))
 		if err != nil {
 			return nil, err
 		}
@@ -143,13 +143,11 @@ func checkExtractedRuntimeInfo(namespace string, selector string, container stri
 }
 
 // PodsReady is a helper function that can be used to check that the selected pods are ready
-func podsReady(client klient.Client, selector string) apimachinerywait.ConditionWithContextFunc {
+func podsReady(client klient.Client, namespace string, selector string) apimachinerywait.ConditionWithContextFunc {
 	return func(ctx context.Context) (done bool, err error) {
-		watchOptions := resources.WithLabelSelector(selector)
-
 		var pods corev1.PodList
 
-		if err := client.Resources().List(ctx, &pods, watchOptions); err != nil {
+		if err := client.Resources(namespace).List(ctx, &pods, resources.WithLabelSelector(selector)); err != nil {
 			return false, err
 		}
 
@@ -161,6 +159,7 @@ func podsReady(client klient.Client, selector string) apimachinerywait.Condition
 			podReady := false
 			for _, cond := range pod.Status.Conditions {
 				if cond.Type == corev1.PodReady && cond.Status == corev1.ConditionTrue {
+					fmt.Printf("Pod %s/%s ready\n", pod.ObjectMeta.Namespace, pod.ObjectMeta.Name)
 					podReady = true
 					break
 				}

@@ -78,7 +78,7 @@ func deployTestHelmRelease(appName string) func(context.Context, *testing.T, *en
 		if err != nil {
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 		}
-		err = wait.For(podsReady(client, "app.kubernetes.io/name="+appName), wait.WithTimeout(time.Minute*10))
+		err = wait.For(podsReady(client, namespace, "app.kubernetes.io/name="+appName), wait.WithTimeout(time.Minute*10))
 		if err != nil {
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 		}
