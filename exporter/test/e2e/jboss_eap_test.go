@@ -8,26 +8,26 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-func TestSpringBoot(t *testing.T) {
+func TestJBossEAP_(t *testing.T) {
 
-	appName := "spring-boot"
+	appName := "jboss-eap-7-4-19-app"
 	containerName := "main"
-	image := "quay.io/insights-runtime-extractor-samples/spring-boot:3.1.4"
+	// corresponded to registry.redhat.io/jboss-eap-7/eap74-openjdk8-openshift-rhel8:7.4.19
+	image := "registry.redhat.io/jboss-eap-7/eap74-openjdk8-openshift-rhel8@sha256:a2a2db8ec901d0e871291b991f9eb90e06ac2f92fa17fdd0f1bdc8f8c333f4de"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
-	feature := features.New("Spring Boot from "+image).
+	feature := features.New("JBoss EAP 7.4.19 from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
 		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
-				Os:              "ubuntu",
-				OsVersion:       "20.04",
-				Kind:            "Java",
-				KindVersion:     "17.0.12",
-				KindImplementer: "Eclipse Adoptium",
+				Os:        "rhel",
+				OsVersion: "8.10",
+				Kind:      "Java",
+				// older versions of Java do not have the $JAVA_HOME/release to identify their versions and implementers
 				Runtimes: []types.RuntimeComponent{{
-					Name:    "Spring Boot",
-					Version: "3.1.4",
+					Name:    "Red Hat JBoss Enterprise Application Platform",
+					Version: "7.4.19.GA",
 				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))

@@ -1,7 +1,7 @@
 package e2e
 
 import (
-	"context"
+	"exporter/pkg/types"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -33,34 +33,16 @@ func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOs
 	deployment := newBaseImageDeployment(namespace, appName, 1, containerName, baseImage)
 
 	feature := features.New("base image "+baseImage).
-		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-			ctx, err := deployAndWaitForReadiness(deployment, "app="+appName)(ctx, c)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
-			return ctx
-		}).
-		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-			ctx, err := undeploy(deployment)(ctx, c)
-			g.Expect(err).ShouldNot(Ω.HaveOccurred())
-			return ctx
-		}).
-		Assess("runtime info extracted", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			g := Ω.NewWithT(t)
-			cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, "app="+appName, containerName)
-			result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
-			g.Expect(result).ShouldNot(Ω.BeNil())
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 
-			g.Expect(result.Os).Should(Ω.Equal(expectedOs))
-			g.Expect(result.OsVersion).Should(Ω.Equal(expectedOsVersion))
-			g.Expect(result.Kind).Should(Ω.BeEmpty())
-			g.Expect(result.KindVersion).Should(Ω.BeEmpty())
-			g.Expect(result.KindImplementer).Should(Ω.BeEmpty())
-
-			g.Expect(len(result.Runtimes)).To(Ω.Equal(0))
-
-			return ctx
-		})
+			expected := types.ContainerRuntimeInfo{
+				Os:        expectedOs,
+				OsVersion: expectedOsVersion,
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+		}))
 	_ = testenv.Test(t, feature.Feature())
 }
 
