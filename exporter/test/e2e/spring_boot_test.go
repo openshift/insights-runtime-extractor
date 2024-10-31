@@ -18,7 +18,7 @@ func TestSpringBoot(t *testing.T) {
 	feature := features.New("Spring Boot from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:              "ubuntu",
 				OsVersion:       "20.04",

@@ -19,7 +19,7 @@ func TestWildFly_30_0_1_Final(t *testing.T) {
 	feature := features.New("WildFly from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:              "rhel",
 				OsVersion:       "9.2",
@@ -47,7 +47,7 @@ func TestWildFly_34_0_0_Final(t *testing.T) {
 	feature := features.New("WildFly from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:              "rhel",
 				OsVersion:       "9.4",

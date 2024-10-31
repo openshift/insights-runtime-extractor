@@ -18,7 +18,7 @@ func TestQuarkus_3_13_0(t *testing.T) {
 	feature := features.New("Quarkus from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:              "rhel",
 				OsVersion:       "8.10",
@@ -45,7 +45,7 @@ func TestNativeQuarkus_3_13_0(t *testing.T) {
 	feature := features.New("Native Quarkus from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:        "rhel",
 				OsVersion: "8.9",
@@ -69,7 +69,7 @@ func TestQuarkus_3_15_1(t *testing.T) {
 	feature := features.New("Quarkus from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:              "rhel",
 				OsVersion:       "8.10",
@@ -96,7 +96,7 @@ func TestNativeQuarkus_3_15_1(t *testing.T) {
 	feature := features.New("Native Quarkus from "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:        "rhel",
 				OsVersion: "8.10",

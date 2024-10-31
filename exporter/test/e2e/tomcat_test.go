@@ -19,7 +19,7 @@ func TestTomcat(t *testing.T) {
 	feature := features.New("Tomcat from base image "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:              "ubuntu",
 				OsVersion:       "24.04",
@@ -46,7 +46,7 @@ func TestJBossWebServer(t *testing.T) {
 	feature := features.New("JBoss WebServer 5.8 from base image "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
-		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 			expected := types.ContainerRuntimeInfo{
 				Os:              "rhel",
 				OsVersion:       "8.10",
