@@ -14,6 +14,62 @@ import (
 	"sigs.k8s.io/e2e-framework/third_party/helm"
 )
 
+func TestJBossEAP_7_2_9(t *testing.T) {
+
+	appName := "jboss-eap-7-2-9-app"
+	containerName := "main"
+	// corresponded to registry.redhat.io/jboss-eap-7/eap72-openjdk11-openshift-rhel8:1.2
+	image := "registry.redhat.io/jboss-eap-7/eap72-openjdk11-openshift-rhel8@sha256:8e87b56c7d4d0b31839cff135b05d7b6198c7884fd3c6831b2db6e9e8736560b"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("JBoss EAP 7.2 from "+image).
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+			expected := types.ContainerRuntimeInfo{
+				Os:              "rhel",
+				OsVersion:       "8.2",
+				Kind:            "Java",
+				KindVersion:     "11.0.8",
+				KindImplementer: "N/A",
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Red Hat JBoss Enterprise Application Platform",
+					Version: "7.2.9.GA",
+				}},
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+		}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
+func TestJBossEAP_7_3_10(t *testing.T) {
+
+	appName := "jboss-eap-7-3-10-app"
+	containerName := "main"
+	// corresponded to registry.redhat.io/jboss-eap-7/eap73-openjdk11-openshift-rhel8:7.3.10
+	image := "registry.redhat.io/jboss-eap-7/eap73-openjdk11-openshift-rhel8@sha256:b57e133fef5f2eb38b037e663704f11fc28ce683665e50023ddd998b9e33238a"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("JBoss EAP 7.3.10 from "+image).
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+			expected := types.ContainerRuntimeInfo{
+				Os:              "rhel",
+				OsVersion:       "8.5",
+				Kind:            "Java",
+				KindVersion:     "11.0.13",
+				KindImplementer: "Red Hat, Inc.",
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Red Hat JBoss Enterprise Application Platform",
+					Version: "7.3.10.GA",
+				}},
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+		}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
 func TestJBossEAP_7_4_19(t *testing.T) {
 
 	appName := "jboss-eap-7-4-19-app"
