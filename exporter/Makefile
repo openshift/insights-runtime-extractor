@@ -19,10 +19,11 @@ install-helm:  ## Install Helm toolchain for 3rd party integration
 
 export TEST_NAMESPACE=test-openshift-insights-00001
 e2e-setup: install-helm
-	export TEST_NAMESPACE=${TEST_NAMESPACE} && cd test/e2e && ./setup.sh
+	./test/e2e/setup.sh
 
+export TEST_NAMESPACE=test-openshift-insights-00001
 e2e-test: e2e-setup
-	export TEST_NAMESPACE=${TEST_NAMESPACE} && go test -p 1 -timeout 1h -count=1 -v ./test/e2e/...
+	./test/e2e/test.sh
 
 clean-e2e:
 	oc delete namespace ${TEST_NAMESPACE}
