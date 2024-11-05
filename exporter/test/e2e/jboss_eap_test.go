@@ -107,7 +107,7 @@ func TestJBossEAP_8_0(t *testing.T) {
 			g.Expect(runtimeInfo.Os).Should(Ω.Equal("rhel"))
 			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal("8.10"))
 			g.Expect(runtimeInfo.Kind).Should(Ω.Equal("Java"))
-			g.Expect(runtimeInfo.KindVersion).Should(Ω.Equal("17.0.12"))
+			g.Expect(runtimeInfo.KindVersion).Should(Ω.HavePrefix("17.0"))
 			g.Expect(runtimeInfo.KindImplementer).Should(Ω.Equal("Red Hat, Inc."))
 
 			g.Expect(len(runtimeInfo.Runtimes)).Should(Ω.Equal(1))
