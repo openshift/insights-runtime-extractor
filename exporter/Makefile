@@ -22,7 +22,8 @@ e2e-setup: install-helm
 	export TEST_NAMESPACE=${TEST_NAMESPACE} && cd test/e2e && ./setup.sh
 
 e2e-test: e2e-setup
-	export TEST_NAMESPACE=${TEST_NAMESPACE} && go test -p 1 -timeout 1h -count=1 -v ./test/e2e/...
+	export TEST_NAMESPACE=${TEST_NAMESPACE} && go test -p 1 -timeout 1h -count=1 -v 2>&1 ./test/e2e/... | tee test-results.raw
+	cat test-results.raw | go-junit-report -set-exit-code > test-results-junit.xml
 
 clean-e2e:
 	oc delete namespace ${TEST_NAMESPACE}
