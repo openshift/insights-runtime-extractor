@@ -21,7 +21,7 @@ pub struct Container {
 pub fn get_container(container_id: &String) -> Option<Container> {
     info!("🔎  Reading container information with crictl...");
 
-    let output = Command::new("/crictl")
+    let output = Command::new("crictl")
         .args(["ps", "-o", "json", "-s", "RUNNING"])
         .output()
         .expect("List containers with crictl");
@@ -72,7 +72,7 @@ pub fn get_container(container_id: &String) -> Option<Container> {
 pub fn get_containers() -> Vec<Container> {
     info!("🔎  Reading container information with crictl...");
 
-    let output = Command::new("/crictl")
+    let output = Command::new("crictl")
         .args(["ps", "-o", "json", "-s", "RUNNING"])
         .output()
         .expect("List containers with crictl");
@@ -117,7 +117,7 @@ pub fn get_containers() -> Vec<Container> {
 }
 
 pub fn get_root_pid(container_id: &String) -> u32 {
-    let output = Command::new("/crictl")
+    let output = Command::new("crictl")
         .args([
             "inspect",
             "-o",
