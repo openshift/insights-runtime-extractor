@@ -1,15 +1,8 @@
 FROM registry.ci.openshift.org/ocp/4.18:base-rhel9 AS rust-builder
 ARG TARGETARCH
 
-ENV RUST_TOOLCHAIN=1.81.0
-
 RUN dnf update -y && dnf -y install \
-    gcc make wget
-
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN curl https://sh.rustup.rs -sSf | sh -s -- --default-toolchain ${RUST_TOOLCHAIN} -y
-RUN if [ "$TARGETARCH" == "arm64" ]; then rustup target add aarch64-unknown-linux-musl; fi
-RUN if [ "$TARGETARCH" == "amd64" ]; then rustup target add x86_64-unknown-linux-musl; fi
+    gcc make wget rust-toolset rustfmt
 
 WORKDIR /workspace/extractor
 COPY extractor .
@@ -28,8 +21,8 @@ RUN dnf update -y && dnf -y install \
     cri-tools
 
 COPY --from=rust-builder /workspace/extractor/config/ /
-COPY --from=rust-builder /workspace/extractor/target/*/release/extractor_server /extractor_server
-COPY --from=rust-builder /workspace/extractor/target/*/release/coordinator /coordinator
+COPY --from=rust-builder /workspace/extractor/target/release/extractor_server /extractor_server
+COPY --from=rust-builder /workspace/extractor/target/release/coordinator /coordinator
 # Copy fingerprints written in Go
 COPY --from=go-builder --chmod=755 /workspace/fingerprints/bin/fpr_* /
 ENTRYPOINT [ "/extractor_server" ]
