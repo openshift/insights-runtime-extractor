@@ -1,0 +1,6 @@
+# Red Hat OpenJDK 17
+FROM registry.access.redhat.com/ubi8/openjdk-17@sha256:7d7c73b9fa4ae18fd5a976b84e0e230ca7907419caff507b5a25e4a04a83a8ce
+ARG JAR_FILE=target/plain-java-0.0.1-SNAPSHOT-jar-with-dependencies.jar
+COPY ${JAR_FILE} plain-java-app.jar
+ENTRYPOINT ["java","-jar","/plain-java-app.jar"]
+WORKDIR /app
