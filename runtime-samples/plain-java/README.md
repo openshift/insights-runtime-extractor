@@ -6,7 +6,7 @@ To build the container image and make it available to the OpenShift internal ima
 registry, run:
 
 ```shell script
-make push
+make
 ```
 
 # Workload Runtime Information:
