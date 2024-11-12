@@ -1,6 +1,6 @@
 # corresponded to Red Hat OpenJDK 17 UBI8
 FROM registry.access.redhat.com/ubi8/openjdk-17@sha256:7d7c73b9fa4ae18fd5a976b84e0e230ca7907419caff507b5a25e4a04a83a8ce
-ARG QUARKUS_APP_DIR=target/quarkus-app/*.*
-COPY ${QUARKUS_APP_DIR} quarkus-app
-ENTRYPOINT ["java","-jar","/quarkus-run.jar"]
+ARG QUARKUS_APP_DIR=target/quarkus-app/
+COPY ${QUARKUS_APP_DIR} /quarkus-app
 WORKDIR /quarkus-app
+ENTRYPOINT ["java","-jar","quarkus-run.jar"]

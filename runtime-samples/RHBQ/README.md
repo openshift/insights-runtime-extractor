@@ -14,5 +14,17 @@ make
 For the OpenJDK image:
 
 ```json
-xxxx
+"runtimeInfo": {
+  "os": "rhel",
+  "osVersion": "8.10",
+  "kind": "Java",
+  "kindVersion": "17.0.13",
+  "kindImplementer": "Red Hat, Inc.",
+  "runtimes": [ 
+    {
+      "name": "Quarkus",
+      "version": "3.8.6.redhat-00004"
+    }
+  ]
+}
 ```

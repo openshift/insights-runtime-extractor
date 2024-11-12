@@ -54,4 +54,17 @@
             </plugin>
         </plugins>
     </build>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>redhat-mrrc</id>
+            <url>https://maven.repository.redhat.com/ga/</url>
+        </pluginRepository>
+    </pluginRepositories>
+    <repositories>
+        <repository>
+            <id>redhat-mrrc</id>
+            <url>https://maven.repository.redhat.com/ga/</url>
+        </repository>
+    </repositories>
 </project>
