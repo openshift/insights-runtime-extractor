@@ -14,7 +14,7 @@ func TestPython3(t *testing.T) {
 	appName := "python3-app"
 	containerName := "python"
 	// corresponded to python:3.9.19-slim
-	image := "python@sha256:85c7a2a383a01e0b77b5f9c97d8b1eef70409a99552fde03c518a98dfa19609c"
+	image := "quay.io/insights-runtime-extractor-samples/python@sha256:69e712dbe4c4a166527cbf69374533125cfb6ee93a5e39031a0191c741d386d7"
 	deployment := newPython3AppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Python3 from base image "+image).

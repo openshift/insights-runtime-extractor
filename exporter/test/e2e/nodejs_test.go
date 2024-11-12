@@ -13,7 +13,7 @@ func TestNodeJS(t *testing.T) {
 	appName := "node-app"
 	containerName := "nodejs"
 	// corresponded to node:22.6.0-alpine3.20
-	image := "node@sha256:4162c8a0f1fef9d3b003eb1fd3d8a26db46815288832aa453d829f4129d4dfd3"
+	image := "quay.io/insights-runtime-extractor-samples/node@sha256:4162c8a0f1fef9d3b003eb1fd3d8a26db46815288832aa453d829f4129d4dfd3"
 	deployment := newNodeAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Node.js from base image "+image).

@@ -12,8 +12,8 @@ func TestTomcat(t *testing.T) {
 
 	appName := "tomcat"
 	containerName := "main"
-	// Tomcat image that corresponded to 11.0-jre21
-	image := "tomcat@sha256:3b353d4a30c315ae1177b04642c932e07fcd87155452629d4809c38d9854de72"
+	// Tomcat image that corresponded to tomcat:11.0-jre21
+	image := "quay.io/insights-runtime-extractor-samples/tomcat@sha256:505c9fcae748e2e0488c8aa13794f041088b4771739aa906ef761b124474c874"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Tomcat from base image "+image).
@@ -24,11 +24,11 @@ func TestTomcat(t *testing.T) {
 				Os:              "ubuntu",
 				OsVersion:       "24.04",
 				Kind:            "Java",
-				KindVersion:     "21.0.4",
+				KindVersion:     "21.0.5",
 				KindImplementer: "Eclipse Adoptium",
 				Runtimes: []types.RuntimeComponent{{
 					Name:    "Apache Tomcat",
-					Version: "11.0.0-M22",
+					Version: "11.0.1",
 				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
