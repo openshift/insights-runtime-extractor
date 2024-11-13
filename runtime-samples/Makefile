@@ -1,6 +1,6 @@
-.PHONY: golang-app quarkus-3.13.0 quarkus-3.15.1 spring-boot
+.PHONY: golang-app quarkus-3.13.0 quarkus-3.15.1 spring-boot RHBQ
 
-all: quarkus-3.13.0 quarkus-3.15.1 spring-boot golang-app
+all: quarkus-3.13.0 quarkus-3.15.1 spring-boot golang-app RHBQ
 
 golang-app:
 	cd ./golang-app && make
@@ -13,3 +13,6 @@ quarkus-3.15.1:
 
 spring-boot:
 	cd ./spring-boot && make
+
+RHBQ:
+	cd ./RHBQ && make

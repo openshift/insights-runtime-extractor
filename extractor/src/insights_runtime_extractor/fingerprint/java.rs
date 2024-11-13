@@ -44,7 +44,7 @@ impl Java {
     ) -> Option<Vec<String>> {
         let jar = match jar {
             jar if jar.starts_with("/") => jar.to_owned(),
-            jar => format!("{:?}/{}", process.cwd, jar),
+            jar => format!("{}/{}", process.cwd.as_deref().unwrap(), jar),
         };
 
         return Some(vec![
