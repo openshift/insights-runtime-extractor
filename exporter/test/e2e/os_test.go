@@ -20,11 +20,11 @@ func TestUbi8Minimal(t *testing.T) {
 }
 
 func TestDebian(t *testing.T) {
-	testBaseImage(t, "debian:12", "debian", "12")
+	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/debian:12", "debian", "12")
 }
 
 func TestCentOs7(t *testing.T) {
-	testBaseImage(t, "centos:7", "centos", "7")
+	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/centos:7", "centos", "7")
 }
 
 func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOsVersion string) {
