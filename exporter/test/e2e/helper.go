@@ -135,6 +135,7 @@ func checkExtractedRuntimeInfo(namespace string, selector string, container stri
 		cid, nodeName := getContainerIDAndWorkerNode(ctx, c, g, namespace, selector, container)
 		result := extractRuntimeInfoFromContainer(ctx, g, c, cid, nodeName)
 		g.Expect(result).ShouldNot(Ω.BeNil())
+		fmt.Printf("Checking runtime info for container %s\n", cid)
 
 		check(g, result)
 

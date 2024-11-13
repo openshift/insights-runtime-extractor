@@ -1,14 +1,19 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/e2e-framework/klient/conf"
+	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
@@ -19,7 +24,8 @@ var (
 	// insightsOperatorRuntimeNamespace is the namespace where the insights runtime extractor is deployed
 	insightsRuntimeExtractorNamespace string
 	// namespace is the namespace where workloads are deployed before their runtime info are extracted
-	namespace string
+	namespace                    string
+	insightsOperatorRuntimeLabel = "app.kubernetes.io/name=insights-runtime-extractor-e2e"
 )
 
 func TestMain(m *testing.M) {
@@ -48,10 +54,11 @@ func TestMain(m *testing.M) {
 	testenv.Setup(
 		envfuncs.CreateNamespace(namespace),
 		deployAndWaitForReadiness(curl, "app.kubernetes.io/name=curl-e2e"),
-		deployAndWaitForReadiness(insightsOperatorRuntime, "app.kubernetes.io/name=insights-runtime-extractor-e2e"),
+		deployAndWaitForReadiness(insightsOperatorRuntime, insightsOperatorRuntimeLabel),
 	)
 
 	testenv.Finish(
+		fetchExtractorLogs(),
 		undeploy(insightsOperatorRuntime),
 		undeploy(curl),
 		envfuncs.DeleteNamespace(namespace),
@@ -97,6 +104,7 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 							MountPath: "/data",
 							Name:      "data-volume",
 						}},
+						Command: []string{"/extractor_server", "--log-level", "trace"},
 					}, {
 						Name:            "exporter",
 						Image:           testedExporterImage,
@@ -146,5 +154,66 @@ func newCurlDeployment() *appsv1.Deployment {
 				},
 			},
 		},
+	}
+}
+
+// After the tests are run, store the logs from the extractor in $ARTIFACT_DIR
+func fetchExtractorLogs() env.Func {
+	return func(ctx context.Context, c *envconf.Config) (context.Context, error) {
+		client, err := c.NewClient()
+		if err != nil {
+			return ctx, fmt.Errorf("failed to create client: %v", err)
+		}
+		clientset, err := kubernetes.NewForConfig(client.RESTConfig())
+		if err != nil {
+			return ctx, fmt.Errorf("failed to create Kubernetes client: %v", err)
+		}
+
+		artifactDir := os.Getenv("ARTIFACT_DIR")
+		if artifactDir == "" {
+			artifactDir = "."
+		}
+
+		// find all the pods of the daemon set
+		var pods corev1.PodList
+		err = client.Resources(insightsRuntimeExtractorNamespace).List(ctx, &pods, resources.WithLabelSelector(insightsOperatorRuntimeLabel))
+		if err != nil {
+			return nil, err
+		}
+
+		// for each pods, fetch the logs of its extractor container
+		// and store them in a $ARTIFACT_DIR/$pod.log file
+		for _, pod := range pods.Items {
+			namespace := pod.ObjectMeta.Namespace
+			podName := pod.ObjectMeta.Name
+			containerName := "extractor"
+			fmt.Printf("Fetching logs from %s\n", podName)
+
+			podLogOptions := &corev1.PodLogOptions{
+				Container: containerName,
+				Follow:    false,
+			}
+
+			logFilePath := filepath.Join(artifactDir, fmt.Sprintf("%s.log", podName))
+			logFile, err := os.Create(logFilePath)
+			if err != nil {
+				panic(fmt.Errorf("failed to create log file: %v", err))
+			}
+			defer logFile.Close()
+
+			req := clientset.CoreV1().Pods(namespace).GetLogs(podName, podLogOptions)
+			logStream, err := req.Stream(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("error opening log stream: %v", err)
+			}
+			defer logStream.Close()
+
+			_, err = io.Copy(logFile, logStream)
+			if err != nil {
+				fmt.Printf("failed to write logs to file: %v", err)
+			}
+		}
+
+		return ctx, nil
 	}
 }

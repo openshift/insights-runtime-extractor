@@ -22,7 +22,7 @@ pub fn get_process_leaves(pid: &u32) -> Vec<ContainerProcess> {
     let leaves = get_leaves(&pid);
     debug!("got leaves: {:#?}", leaves);
 
-    let res = leaves
+    let res: Vec<ContainerProcess>= leaves
         .iter()
         .map(|pid| s.process(Pid::from_u32(*pid)))
         .flatten()
@@ -39,7 +39,7 @@ pub fn get_process_leaves(pid: &u32) -> Vec<ContainerProcess> {
         .collect();
 
     let duration = start.elapsed().as_millis();
-    trace!("Processed processes in {:?}ms", duration);
+    trace!("Processed {} processes in {:?}ms", res.len(), duration);
 
     res
 }

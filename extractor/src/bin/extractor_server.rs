@@ -25,7 +25,7 @@ fn main() {
 
     let log_level = args.log_level.unwrap_or(String::from("info"));
 
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level)).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level.clone())).init();
 
     info!("Gather runtime information from containers on OpenShift");
 
@@ -47,14 +47,15 @@ fn main() {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                thread::spawn(|| handle_trigger_extraction(stream));
+                let log_level = log_level.clone();
+                thread::spawn(|| handle_trigger_extraction(stream, log_level));
             }
             Err(err) => error!("Error during TCP connection: {}", err),
         }
     }
 }
 
-fn handle_trigger_extraction(mut stream: TcpStream) {
+fn handle_trigger_extraction(mut stream: TcpStream, log_level: String) {
     info!("Triggering new runtime info extraction");
 
     let start = Instant::now();
@@ -62,7 +63,7 @@ fn handle_trigger_extraction(mut stream: TcpStream) {
     // Execute the "extractor_coordinator" program
     let output = Command::new("/coordinator")
         .arg("--log-level")
-        .arg("trace")
+        .arg(log_level)
         .output();
     match output {
         Ok(output) => {
