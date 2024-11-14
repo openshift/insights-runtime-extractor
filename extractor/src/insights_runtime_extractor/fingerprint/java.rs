@@ -7,7 +7,7 @@ use crate::insights_runtime_extractor::ContainerProcess;
 pub struct Java {}
 
 impl Java {
-    /// Check if the Java process is started with a jboss.home.dir system property
+    /// Check if the Java process is started with a jboss.home.dir system property or JBOSS_HOME env var
     fn jboss_modules_executable(
         out_dir: &String,
         process: &ContainerProcess,
@@ -16,6 +16,20 @@ impl Java {
             "Process {} is using JBoss Modules with command line {:#?}",
             &process.pid, &process.command_line
         );
+
+        if process.environ.contains_key("JBOSS_HOME") {
+            let jboss_home_dir = process.environ.get("JBOSS_HOME").unwrap().to_string();
+            debug!(
+                "Process {} is using JBoss Module from JBoss Home {:#?}",
+                &process.pid, jboss_home_dir
+            );
+
+            return  Some(vec![
+                    String::from("./fpr_java_jboss_modules"),
+                    out_dir.to_string(),
+                    jboss_home_dir,
+                ])
+        }
 
         return process
             .command_line
