@@ -8,12 +8,11 @@ import (
 	"testing"
 	"time"
 
-	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
-
 	Ω "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
 
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
