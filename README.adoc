@@ -106,7 +106,7 @@ Once the `insights-runtime-extractor` is ready, you can extract all the runtime 
 [source,bash]
 ----
 curl -s -L https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/scripts/extract.sh | bash -s
----- 
+----
 
 This command will output all the extracted runtime info organized by `namespace`, `pod` names and `container` ID:
 
@@ -142,3 +142,12 @@ Extracting runtime info from insights-runtime-extractor-z74cp...
   [...]
 }
 ----
+
+## Support
+
+The Insights Runtime Extractor is part of Red Hat OpenShift Container Platform. For product-related issues, please
+file a ticket in https://issues.redhat.com/secure/CreateIssue.jspa?pid=12332330&issuetype=1[Red Hat JIRA] for the `insights-runtime-extractor` component.
+
+## License
+
+This project is licensed by the Apache License 2.0. For more information check the LICENSE file.
