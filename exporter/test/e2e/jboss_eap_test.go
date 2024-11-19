@@ -8,6 +8,8 @@ import (
 	"time"
 
 	Ω "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
@@ -48,7 +50,7 @@ func TestJBossEAP_7_3_10(t *testing.T) {
 	containerName := "main"
 	// corresponded to registry.redhat.io/jboss-eap-7/eap73-openjdk11-openshift-rhel8:7.3.10
 	image := "registry.redhat.io/jboss-eap-7/eap73-openjdk11-openshift-rhel8@sha256:b57e133fef5f2eb38b037e663704f11fc28ce683665e50023ddd998b9e33238a"
-	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+	deployment := newEAP7AppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("JBoss EAP 7.3.10 from "+image).
 		Setup(deployTestResource(deployment, appName)).
@@ -76,7 +78,7 @@ func TestJBossEAP_7_4_19(t *testing.T) {
 	containerName := "main"
 	// corresponded to registry.redhat.io/jboss-eap-7/eap74-openjdk8-openshift-rhel8:7.4.19
 	image := "registry.redhat.io/jboss-eap-7/eap74-openjdk8-openshift-rhel8@sha256:a2a2db8ec901d0e871291b991f9eb90e06ac2f92fa17fdd0f1bdc8f8c333f4de"
-	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+	deployment := newEAP7AppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("JBoss EAP 7.4.19 from "+image).
 		Setup(deployTestResource(deployment, appName)).
@@ -159,4 +161,22 @@ func undeployTestHelmRelease(appName string) func(context.Context, *testing.T, *
 
 		return ctx
 	}
+}
+
+// Add a readiness probe to the deployment to ensure that the EAP 7.x server is up and ready
+// before the test can proceed
+func newEAP7AppDeployment(namespace string, name string, replicas int32, containerName string, image string) *appsv1.Deployment {
+	deployment := newAppDeployment(namespace, name, replicas, containerName, image)
+
+	deployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
+		ProbeHandler: v1.ProbeHandler{
+			Exec: &v1.ExecAction{
+				Command: []string{"/bin/bash",
+					"-c",
+					"/opt/eap/bin/readinessProbe.sh"},
+			},
+		},
+	}
+
+	return deployment
 }
