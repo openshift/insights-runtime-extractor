@@ -34,8 +34,8 @@ func TestMain(m *testing.M) {
 	testenv = env.NewWithConfig(cfg)
 	namespace = "e2e-insights-runtime-extractor"
 	insightsRuntimeExtractorNamespace = os.Getenv("TEST_NAMESPACE")
-	testedExtractorImage := "insights-runtime-extractor:latest"
-	testedExporterImage := "insights-runtime-exporter:latest"
+	testedExtractorImage := "quay.io/openshift/origin-insights-runtime-extractor:latest"
+	testedExporterImage := "quay.io/openshift/origin-insights-runtime-exporter:latest"
 	if imageRegistry, ok := os.LookupEnv("IMAGE_REGISTRY"); ok {
 		testedExtractorImage = imageRegistry + "/insights-runtime-extractor:latest"
 		testedExporterImage = imageRegistry + "/insights-runtime-exporter:latest"
