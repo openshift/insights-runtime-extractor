@@ -77,11 +77,11 @@ Prequisites:
 * `curl`, `jq`, `oc` are installed on your machine
 * you must have access to an OpenShift cluster and be logged in with a *cluster admin* account
 
-To deploy the insights-runtime-extractor in the `default` namespace, run the commands:
+To deploy the insights-runtime-extractor in the `extractor` namespace, run the commands:
 
 [source,bash]
 ----
-oc project default
+oc project extractor
 oc apply -f https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/manifests/insights-runtime-extractor-scc.yaml
 oc apply -f https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/manifests/insights-runtime-extractor.yaml
 ----
@@ -90,7 +90,7 @@ Verify that it is properly deployed:
 
 [source,bash]
 ----
-oc get daemonset -n default insights-runtime-extractor
+oc get daemonset -n extractor insights-runtime-extractor
 ----
 
 It should display that all the daemonset pods are ready:
@@ -105,17 +105,16 @@ Once the `insights-runtime-extractor` is ready, you can extract all the runtime 
 
 [source,bash]
 ----
-curl -s -L https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/scripts/extract.sh | bash -s
+export NAMESPACE=extractor
+curl -s -L https://raw.githubusercontent.com/openshift/insights-runtime-extractor/main/scripts/extract.sh | bash -s 
 ----
 
-This command will output all the extracted runtime info organized by `namespace`, `pod` names and `container` ID:
+This command will create a `out.json` file that contains the extracted runtime info organized by `namespace`, `pod` names and `container` ID:
 
 [source]
 ----
-Extracting runtime info from insights-runtime-extractor-wt5nr...
-Extracting runtime info from insights-runtime-extractor-z74cp...
 {
-  "default": {
+  "extractor": {
     "insights-runtime-extractor-z74cp": {
       "cri-o://0bfd3fcf6cbe8b4429bcc1a8d553a059434362943bd463473bcd113133b96cb8": {
         "os": "rhel",
