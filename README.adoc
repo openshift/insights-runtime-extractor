@@ -114,27 +114,37 @@ This command will create a `out.json` file that contains the extracted runtime i
 [source]
 ----
 {
-  "extractor": {
-    "insights-runtime-extractor-z74cp": {
-      "cri-o://0bfd3fcf6cbe8b4429bcc1a8d553a059434362943bd463473bcd113133b96cb8": {
+  "jmesnil-dev": {
+    "my-quarkus-app-z74cp": {
+      "cri-o://0a8819e0edc0fe3769ac092f7e6cc35a596242c3004bc75d42b6eceb2cdf8b90": {
+        "os": "rhel",
+        "osVersion": "8.6",
+        "kind": "Java",
+        "kindVersion": "17.0.8",
+        "kindImplementer": "Red Hat, Inc.",
+        "runtimes": [
+          {
+            "name": "Quarkus",
+            "version": "3.8.4",
+          }
+      }
+    }
+  },
+  "bob-dev": {
+    "my-golang-app-mn7rd": {
+      "cri-o://cc934f43953b724f97e57aa02d6c3518d1ddc92f996323d76db9f0a44ec620de": {
         "os": "rhel",
         "osVersion": "9.4",
         "kind": "Golang",
         "kindVersion": "go1.22.6"
-      },
-      "cri-o://5e1adf8d60272f0489b4f58eb96116b8269d3bf88f4ec20436c1479833c32a44": {
-        "os": "rhel",
-        "osVersion": "9.4"
       }
-    }
-  },
-  "kube-system": {
-    "konnectivity-agent-mm8jh": {
-      "cri-o://cc934f43953b724f97e57aa02d6c3518d1ddc92f996323d76db9f0a44ec620de": {
+    },
+    "my-golang-app-mm8jh": {
+      "cri-o://47f6c15e0843c84592449d25e5c0b94d5dd2acce3aa126a82cf1fc1e58b6c9ee": {
         "os": "rhel",
-        "osVersion": "9.2",
+        "osVersion": "9.4",
         "kind": "Golang",
-        "kindVersion": "go1.21.11 (Red Hat 1.21.11-1.el9_4) X:strictfipsruntime"
+        "kindVersion": "go1.22.6"
       }
     },
   }

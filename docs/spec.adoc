@@ -17,19 +17,19 @@ The JSON payload is composed of map of namespaces that were scanned:
 ** the value is composed of a map of the containers that belongs to this pod
 *** the key is the *container ID* (with the format `cri-o://xxxxx`)
 *** the value is a map of the extracted runtime information for this container:
-**** `os-release-id` - OS identifier
+**** `os` - OS identifier
 ***** Optional
 ***** Its value corresponds to the `ID` field in the `/etc/os-release` file
-**** `os-release-version-id` - OS version identifier
+**** `osVersion` - OS version identifier
 ***** Optional
 ***** Its value corresponds to the `VERSION_ID` field in the `/etc/os-release` file
-**** `runtime-kind` - the kind of runtime of the container
+**** `kind` - the kind of runtime of the container
 ***** Optional
 ***** Its value is determined by the container scanner after examing the process and its executable
-**** `runtime-kind-version` - the version of the kind of runtime of the container
+**** `kindVersion` - the version of the kind of runtime of the container
 ***** Optional
 ***** Its value is extracted from the process
-**** `runtime-kind-implementer` - the entity that implemented the kind of runtime of the container
+**** `kindImplementer` - the entity that implemented the kind of runtime of the container
 ***** Optional
 ***** Its value is extracted from the process
 **** `runtimes` is an array of runtime informations detected by the container scanner.
@@ -58,11 +58,11 @@ Executing the container scanner on a worker node will report a JSON payload such
   "my-app-dev": {
     "app1-m2er6": {
       "cri-o://1232455343434": {
-        "os-release-id": "rhel",
-        "os-release-version-id": "8.9",
-        "runtime-kind": "Java",
-        "runtime-kind-version": "17.0.7",
-        "runtime-kind-implementer": "Red Hat, Inc.",
+        "os": "rhel",
+        "osVersion": "8.9",
+        "kind": "Java",
+        "kindVersion": "17.0.7",
+        "kindImplementer": "Red Hat, Inc.",
         "runtimes": [
           {
             "name": "Quarkus",
@@ -71,20 +71,14 @@ Executing the container scanner on a worker node will report a JSON payload such
         ]
       },
       "cri-o://7e345b423a1241": {
-        "runtime-kind": "Go",
-        "runtime-kind-version": "go 1.20.1"
+        "kind": "Go",
+        "kindVersion": "go 1.20.1"
       }
     },
     "db1-er6et": {
       "cri-o://6e924d4c88e158e9881c6": {
-        "os-release-id": "ol",
-        "os-release-version-id": "8.5",
-        "runtimes": [
-          {
-            "name": "PostgreSQL",
-            "version": "postgres (PostgreSQL) 15.6"
-          }
-        ]
+        "os": "ol",
+        "osVersion": "8.5"
       }
     }
   }
@@ -102,6 +96,5 @@ The  `app2-m2er6` pod in the `my-app-dev` namespace is composed of 2 containers:
 
 The container `cri-o://6e924d4c88e158e9881c6` that belongs to the `db1-er6et` pod in the `my-app-dev` namespace has the following runtime information:
 
-* It is running PostgreSQL 15.6
-* The container image was built from Oracle Linux 8.9
+* The container image was built from Oracle Linux 8.5
 * It does not contain any information of the kind of runtime.
