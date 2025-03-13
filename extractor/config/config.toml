@@ -23,7 +23,7 @@ jar-version-manifest-entry = "Spring-Boot-Version"
 
 [[fingerprints.java]]
 runtime-name = "Spring Boot"
-main-class = "org.springframework.boot.loader.WarLauncher"
+main-class = "org.springframework.boot.loader.launch.WarLauncher"
 read-manifest-of-executable-jar = true
 jar-version-manifest-entry = "Spring-Boot-Version"
 
