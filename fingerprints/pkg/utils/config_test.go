@@ -13,5 +13,5 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	assert.Equal(t, 2, len(config.Fingerprints.VersionExecutables))
-	assert.Equal(t, 3, len(config.Fingerprints.Java))
+	assert.Equal(t, 4, len(config.Fingerprints.Java))
 }
