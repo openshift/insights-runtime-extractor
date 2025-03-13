@@ -1,0 +1,6 @@
+# Red Hat OpenJDK 21
+FROM registry.access.redhat.com/ubi8/openjdk-21@sha256:7aaabadcb6bbcc3783d3f5d0685037797efbb7a590088dafab7927414fe93a37
+WORKDIR /app
+COPY target/tomcat-jsp-3.4.3.war sb-343.war
+ENTRYPOINT ["java","-jar","/app/sb-343.war"]
+
