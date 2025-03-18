@@ -1,6 +1,5 @@
 # corresponded to 17-jdk-focal
 FROM eclipse-temurin@sha256:d23172f5284c289d5250564ace7be94189c1003af45e6db7b3855d016b61c8a1
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
 WORKDIR /app
+COPY target/rest-service-complete-0.0.1-SNAPSHOT.jar app.jar
+ENTRYPOINT ["java","-jar","/app/app.jar"]
