@@ -1,0 +1,6 @@
+# corresponded to 3.13.2-slim
+FROM python@sha256:6175f82083af6cdc6c03b9c6525090a6670d0d2aaf318dcc10ac7b0fca5f69dc
+
+WORKDIR /workspace
+
+ENTRYPOINT [ "python3", "-m", "http.server" , "8090" ]
