@@ -1,0 +1,6 @@
+# corresponded to node:22.14.0-slim
+FROM node@sha256:7a6cc2b36be75212b8eccfe3291f61339dc5ef864699c303b2482f7d7b94a0ff
+
+WORKDIR /workspace
+
+ENTRYPOINT [ "node", "-e", "r=require;r(\"http\").createServer((i,o)=>r(\"stream\").pipeline(r(\"fs\").createReadStream(i.url.slice(1)),o,_=>_)).listen(8080)" ]

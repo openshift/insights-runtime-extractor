@@ -5,17 +5,39 @@ import (
 	"testing"
 
 	Ω "github.com/onsi/gomega"
-	appsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-func TestPython3(t *testing.T) {
+func TestPython_2_7_18(t *testing.T) {
 
-	appName := "python3-app"
-	containerName := "python"
+	appName := "python-2-7-18-app"
+	containerName := "python-2-7-18"
+	// corresponded to python:2.7.18-slim
+	image := "quay.io/insights-runtime-extractor-samples/python@sha256:1cbf6240295dc583767410f74a0ec8f0fd80f640cfb0b44921fa6712ac7ccda0"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	// Python 2.7.18 prints version to stderr instead of stdout (Python extracted without version = Python 2)
+	feature := features.New("Python2 from base image "+image).
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+			expected := types.ContainerRuntimeInfo{
+				Os:          "debian",
+				OsVersion:   "10",
+				Kind:        "Python",
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+		}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
+func TestPython3_3_9_19(t *testing.T) {
+
+	appName := "python3-3-9-19-app"
+	containerName := "python-3-9-19"
 	// corresponded to python:3.9.19-slim
-	image := "quay.io/insights-runtime-extractor-samples/python@sha256:69e712dbe4c4a166527cbf69374533125cfb6ee93a5e39031a0191c741d386d7"
-	deployment := newPython3AppDeployment(namespace, appName, 1, containerName, image)
+	image := "quay.io/insights-runtime-extractor-samples/python@sha256:c66cd8a43c55ba2291230670f3681b5dcdcf284e7499a2819e0349a393798239"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Python3 from base image "+image).
 		Setup(deployTestResource(deployment, appName)).
@@ -32,13 +54,26 @@ func TestPython3(t *testing.T) {
 	_ = testenv.Test(t, feature.Feature())
 }
 
-func newPython3AppDeployment(namespace string, name string, replicas int32, containerName string, image string) *appsv1.Deployment {
-	deployment := newAppDeployment(namespace, name, replicas, containerName, image)
+func TestPython3_3_13_2(t *testing.T) {
 
-	deployment.Spec.Template.Spec.Containers[0].Command = []string{"python3"}
-	deployment.Spec.Template.Spec.Containers[0].Args = []string{
-		"-m",
-		"http.server"}
+	appName := "python3-3-13-2-app"
+	containerName := "python-3-13-2"
+	// corresponded to python:3.13.2-slim
+	image := "quay.io/insights-runtime-extractor-samples/python@sha256:09ae40a77fda2b4150bc9ffa99e8fcb10e935aa752209c9a7cd674ded8bd8d30"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
-	return deployment
+	feature := features.New("Python3 from base image "+image).
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+			expected := types.ContainerRuntimeInfo{
+				Os:          "debian",
+				OsVersion:   "12",
+				Kind:        "Python",
+				KindVersion: "Python 3.13.2",
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+		}))
+	_ = testenv.Test(t, feature.Feature())
 }
+

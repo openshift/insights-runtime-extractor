@@ -1,0 +1,9 @@
+# corresponded to 1.24.1
+FROM golang@sha256:7ebae3e990ad9a8406da7ec4cd127decc408c98f8a88d0f2bef629bcaff691cd
+
+WORKDIR /workspace/golang-app
+COPY . .
+ARG GO_LDFLAGS=""
+RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
+
+ENTRYPOINT [ "/workspace/golang-app/http-server" ]
