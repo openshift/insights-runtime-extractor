@@ -69,7 +69,9 @@ func TestJBossWebServer_6_0_5(t *testing.T) {
 	containerName := "main"
 	image := "registry.redhat.io/jboss-webserver-6/jws60-openjdk21-openshift-rhel8@sha256:d038212f1d7e72440929dd014b13611e761d6149939789d0b18d5b8d3af1a9fb"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
-
+        
+	// JWS 6.0.5 does not include Tomcat redhat build version in MANIFEST file
+	// https://issues.redhat.com/browse/JWS-3528
 	feature := features.New("JBoss WebServer 6.0.5 from base image "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
