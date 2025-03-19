@@ -16,6 +16,7 @@ func TestPython_2_7_18(t *testing.T) {
 	image := "quay.io/insights-runtime-extractor-samples/python@sha256:1cbf6240295dc583767410f74a0ec8f0fd80f640cfb0b44921fa6712ac7ccda0"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
+	// Python 2.7.18 prints version to stderr instead of stdout (Python extracted without version = Python 2)
 	feature := features.New("Python2 from base image "+image).
 		Setup(deployTestResource(deployment, appName)).
 		Teardown(undeployTestResource(deployment, appName)).
@@ -24,7 +25,6 @@ func TestPython_2_7_18(t *testing.T) {
 				Os:          "debian",
 				OsVersion:   "10",
 				Kind:        "Python",
-				KindVersion: "Python 2.7.18",
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
