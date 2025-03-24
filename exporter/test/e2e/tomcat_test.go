@@ -84,7 +84,7 @@ func TestJBossWebServer_6_0_5(t *testing.T) {
 				KindImplementer: "Red Hat, Inc.",
 				Runtimes: []types.RuntimeComponent{{
 					Name:    "Apache Tomcat",
-					Version: "10.1.8.redhat-00022",
+					Version: "10.1.8",
 				}},
 			}
 			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
