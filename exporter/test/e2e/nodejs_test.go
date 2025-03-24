@@ -5,16 +5,15 @@ import (
 	"testing"
 
 	Ω "github.com/onsi/gomega"
-	appsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-func TestNodeJS(t *testing.T) {
-	appName := "node-app"
-	containerName := "nodejs"
+func TestNodeJS_22_6_0(t *testing.T) {
+	appName := "node-app-22-6-0"
+	containerName := "nodejs-22-6-0"
 	// corresponded to node:22.6.0-alpine3.20
-	image := "quay.io/insights-runtime-extractor-samples/node@sha256:4162c8a0f1fef9d3b003eb1fd3d8a26db46815288832aa453d829f4129d4dfd3"
-	deployment := newNodeAppDeployment(namespace, appName, 1, containerName, image)
+	image := "quay.io/insights-runtime-extractor-samples/node@sha256:7cbffc9cf3886cea69479e3ea3a57034896264bf0e263944465437cdcf13b345"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
 	feature := features.New("Node.js from base image "+image).
 		Setup(deployTestResource(deployment, appName)).
@@ -31,13 +30,25 @@ func TestNodeJS(t *testing.T) {
 	_ = testenv.Test(t, feature.Feature())
 }
 
-func newNodeAppDeployment(namespace string, name string, replicas int32, containerName string, image string) *appsv1.Deployment {
-	deployment := newAppDeployment(namespace, name, replicas, containerName, image)
+func TestNodeJS_22_14_0(t *testing.T) {
+	appName := "node-app-22-14-0"
+	containerName := "nodejs-22-14-0"
+	// corresponded to node:22.14.0-slim
+	image := "quay.io/insights-runtime-extractor-samples/node@sha256:9a81af4036bda12b35b8be6a55586d0a088dfff0cbaa51f326301623a1b17814"	
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
-	deployment.Spec.Template.Spec.Containers[0].Command = []string{"node"}
-	deployment.Spec.Template.Spec.Containers[0].Args = []string{
-		"-e",
-		"r=require;r(\"http\").createServer((i,o)=>r(\"stream\").pipeline(r(\"fs\").createReadStream(i.url.slice(1)),o,_=>_)).listen(8080)"}
-
-	return deployment
+	feature := features.New("Node.js from base image "+image).
+		Setup(deployTestResource(deployment, appName)).
+		Teardown(undeployTestResource(deployment, appName)).
+		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+			expected := types.ContainerRuntimeInfo{
+				Os:          "debian",
+				OsVersion:   "12",
+				Kind:        "Node.js",
+				KindVersion: "v22.14.0",
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+		}))
+	_ = testenv.Test(t, feature.Feature())
 }
+
