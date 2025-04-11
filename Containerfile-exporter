@@ -3,6 +3,7 @@ FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.23-openshift-4.19 AS 
 WORKDIR /workspace/exporter
 COPY exporter .
 ARG GO_LDFLAGS=""
+ENV GOEXPERIMENT=strictfipsruntime
 RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
 
 FROM registry.ci.openshift.org/ocp/4.19:base-rhel9
