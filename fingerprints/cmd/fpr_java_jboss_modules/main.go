@@ -14,7 +14,7 @@ const (
 	versionDelimiter                    = "- Version"
 	productManifestPath                 = "modules/system/layers/base/org/jboss/as/product/main/dir/META-INF/MANIFEST.MF"
 	productMainPath                     = "modules/system/layers/base/org/jboss/as/product/main/"
-	wildflyFeaturePackProductConfPrefix = "wildfly-feature-pack-product-conf"
+	wildflyFeaturePackProductConfPrefix = "wildfly-ee-feature-pack-product-conf"
 	jbossProductReleaseName             = "JBoss-Product-Release-Name"
 	jbossProductReleaseVersion          = "JBoss-Product-Release-Version"
 )
