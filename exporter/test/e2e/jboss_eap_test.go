@@ -103,27 +103,26 @@ func TestJBossEAP_8_0(t *testing.T) {
 	appName := "jboss-eap-8-0-app"
 
 	feature := features.New("JBoss EAP 8.0 from Helm release").
-		Setup(deployTestHelmRelease(appName)).
+		Setup(deployTestHelmRelease_8_0(appName)).
 		Teardown(undeployTestHelmRelease(appName)).
 		Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app.kubernetes.io/name="+appName, appName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
-			g.Expect(runtimeInfo.Os).Should(Ω.Equal("rhel"))
-			g.Expect(runtimeInfo.OsVersion).Should(Ω.Equal("8.10"))
-			g.Expect(runtimeInfo.Kind).Should(Ω.Equal("Java"))
-			g.Expect(runtimeInfo.KindVersion).Should(Ω.HavePrefix("17.0"))
-			g.Expect(runtimeInfo.KindImplementer).Should(Ω.Equal("Red Hat, Inc."))
-
-			/*
-				temporary skip these assertions.
-				g.Expect(len(runtimeInfo.Runtimes)).Should(Ω.Equal(1))
-				runtime := runtimeInfo.Runtimes[0]
-				g.Expect(runtime.Name).Should(Ω.Equal("Red Hat JBoss Enterprise Application Platform"))
-				g.Expect(runtime.Version).Should(Ω.HavePrefix("8.0 Update"))
-			*/
+			expected := types.ContainerRuntimeInfo{
+				Os:              "rhel",
+				OsVersion:       "8.10",
+				Kind:            "Java",
+				KindVersion:     "17.0.14",
+				KindImplementer: "Red Hat, Inc.",
+				Runtimes: []types.RuntimeComponent{{
+					Name:    "Red Hat JBoss Enterprise Application Platform",
+					Version: "8.0 Update 6.1",
+				}},
+			}
+			g.Expect(runtimeInfo).Should(Ω.Equal(expected))
 		}))
 	_ = testenv.Test(t, feature.Feature())
 }
 
-func deployTestHelmRelease(appName string) func(context.Context, *testing.T, *envconf.Config) context.Context {
+func deployTestHelmRelease_8_0(appName string) func(context.Context, *testing.T, *envconf.Config) context.Context {
 	return func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 		g := Ω.NewWithT(t)
 
@@ -131,6 +130,9 @@ func deployTestHelmRelease(appName string) func(context.Context, *testing.T, *en
 		if err := manager.RunInstall(helm.WithChart("https://github.com/jbossas/eap-charts/releases/download/eap8-1.1.2/eap8-1.1.2.tgz"),
 			helm.WithNamespace(namespace),
 			helm.WithName(appName),
+			helm.WithArgs("--set", "build.uri=https://github.com/openshift/insights-runtime-extractor"),
+			helm.WithArgs("--set", "build.contextDir=runtime-samples/jboss-eap/8.0"),
+			helm.WithArgs("--set", "build.s2i.jkd17.runtimeImage=registry.redhat.io/jboss-eap-8/eap8-openjdk17-runtime-openshift-rhel8@sha256:d16346922c00c0430b3a3a6b3a47c910a23063a8a679a5c1b2d32fd96b92a225"),
 		); err != nil {
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 		}
