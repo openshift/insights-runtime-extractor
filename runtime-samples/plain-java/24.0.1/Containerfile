@@ -1,0 +1,4 @@
+# Eclipse Temurin 24.0.1_9-jdk-alpine-3.21
+FROM eclipse-temurin@sha256:1f4c3a4fac4d0bea33e9472d2721bc3e04b0538b5e847e7c1d8544ebfdd10b10
+COPY target/plain-java-0.0.1-SNAPSHOT-jar-with-dependencies.jar /plain-java-app.jar
+ENTRYPOINT ["java","-jar","/plain-java-app.jar"]

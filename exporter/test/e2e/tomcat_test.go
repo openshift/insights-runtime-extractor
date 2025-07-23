@@ -91,3 +91,30 @@ func TestJBossWebServer_6_0_5(t *testing.T) {
 		}))
 	_ = testenv.Test(t, feature.Feature())
 }
+
+func TestJBossWebServer_6_1_0(t *testing.T) {
+
+	appName := "jboss-webserver-6-1-0"
+	containerName := "main"
+	image := "registry.redhat.io/jboss-webserver-6/jws61-openjdk21-openshift-rhel8@sha256:99b86e9a99fea3c057d98c2460f2bddef8af7235ee228f63d0064daf25b593b4"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("JBoss WebServer 6.1.0 from base image "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:              "rhel",
+			OsVersion:       "8.10",
+			Kind:            "Java",
+			KindVersion:     "21.0.7",
+			KindImplementer: "Red Hat, Inc.",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "Apache Tomcat",
+				Version: "10.1.36.redhat-00007",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
