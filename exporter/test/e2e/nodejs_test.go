@@ -55,7 +55,7 @@ func TestNodeJS_22_14_0(t *testing.T) {
 func TestNodeJS_24_4_1(t *testing.T) {
 	appName := "node-app-24-4-1"
 	containerName := "nodejs-24-4-1"
-	// corresponded to node:22.14.0-slim
+	// corresponded to node:24.4.1-alpine3.22
 	image := "quay.io/insights-runtime-extractor-samples/node:24.4.1-alpine3.22"
 	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
 
