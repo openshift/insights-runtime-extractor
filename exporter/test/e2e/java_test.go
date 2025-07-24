@@ -43,8 +43,8 @@ func TestJava_24_0_1(t *testing.T) {
 	Teardown(undeployTestResource(deployment, appName)).
 	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 		expected := types.ContainerRuntimeInfo{
-			Os:              "ubuntu",
-			OsVersion:       "24.04",
+			Os:              "alpine",
+			OsVersion:       "3.21.4",
 			Kind:            "Java",
 			KindVersion:     "24.0.1",
 			KindImplementer: "Eclipse Adoptium",
