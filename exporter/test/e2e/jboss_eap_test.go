@@ -132,7 +132,7 @@ func deployTestHelmRelease_8_0(appName string) func(context.Context, *testing.T,
 			helm.WithName(appName),
 			helm.WithArgs("--set", "build.uri=https://github.com/openshift/insights-runtime-extractor"),
 			helm.WithArgs("--set", "build.contextDir=runtime-samples/jboss-eap/8.0"),
-			helm.WithArgs("--set", "build.s2i.jkd17.runtimeImage=registry.redhat.io/jboss-eap-8/eap8-openjdk17-runtime-openshift-rhel8@sha256:d16346922c00c0430b3a3a6b3a47c910a23063a8a679a5c1b2d32fd96b92a225"),
+			helm.WithArgs("--set", "build.s2i.jdk17.runtimeImage=registry.redhat.io/jboss-eap-8/eap8-openjdk17-runtime-openshift-rhel8@sha256:d16346922c00c0430b3a3a6b3a47c910a23063a8a679a5c1b2d32fd96b92a225"),
 		); err != nil {
 			g.Expect(err).ShouldNot(Ω.HaveOccurred())
 		}
