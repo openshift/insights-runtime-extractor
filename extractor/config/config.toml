@@ -1,7 +1,7 @@
 # Configuration file for the insights-runtime-extractor
 
 [[fingerprints.version-executables]]
-process-names = ["node"]
+process-names = ["node", "MainThread"]
 runtime-kind-name = "Node.js"
 
 [[fingerprints.version-executables]]
