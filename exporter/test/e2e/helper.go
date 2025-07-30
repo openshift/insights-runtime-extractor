@@ -41,16 +41,46 @@ func newAppDeployment(namespace string, name string, replicas int32, containerNa
 	}
 }
 
+func newSidecarContainerDeployment(namespace string, name string, replicas int32, containerName string, image string, initContainerName string, initImage string, initCommand []string) *appsv1.Deployment {
+	labels := map[string]string{"app": name}
+	restartPolicy := corev1.ContainerRestartPolicyAlways
+	emptyDir := corev1.EmptyDirVolumeSource{}
+	volumeSource := corev1.VolumeSource{EmptyDir: &emptyDir}
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{Labels: labels},
+				Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: containerName, Image: image, VolumeMounts: []corev1.VolumeMount{{Name: "data", MountPath: "/opt"}}}},
+							InitContainers: []corev1.Container{{Name: initContainerName, Image: initImage, RestartPolicy: &restartPolicy, Command: initCommand, VolumeMounts: []corev1.VolumeMount{{Name: "data", MountPath: "/opt"}}}},
+							Volumes: []corev1.Volume{{Name: "data", VolumeSource: volumeSource}},
+				},
+			},
+		},
+	}
+}
+
 func getContainerIDAndWorkerNode(ctx context.Context, c *envconf.Config, g *Ω.WithT, namespace string, selector string, containerName string) (namespacedContainerId, string) {
 	pod := getPod(ctx, c, g, namespace, selector)
 	g.Expect(len(pod.Status.ContainerStatuses)).Should(Ω.Equal(1))
 	container := pod.Status.ContainerStatuses[0]
-	g.Expect(container.Name).Should(Ω.Equal(containerName))
-
+	containerId := container.ContainerID
+	if container.Name == containerName {
+		containerId = container.ContainerID
+	} else {
+		g.Expect(len(pod.Status.InitContainerStatuses)).Should(Ω.Equal(1))
+		initContainer := pod.Status.InitContainerStatuses[0]
+		g.Expect(initContainer.Name).Should(Ω.Equal(containerName))
+		containerId = initContainer.ContainerID
+	}
 	return namespacedContainerId{
 		namespace:   namespace,
 		podName:     pod.ObjectMeta.Name,
-		containerId: container.ContainerID,
+		containerId: containerId,
 	}, pod.Spec.NodeName
 }
 
