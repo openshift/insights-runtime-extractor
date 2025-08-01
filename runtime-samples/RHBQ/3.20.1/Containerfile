@@ -1,0 +1,6 @@
+# corresponded to Red Hat OpenJDK 21 UBI8
+FROM registry.access.redhat.com/ubi8/openjdk-21@sha256:e917d05a8bfd9cd63e808ce31b45163a41cb152867553dec25d34a952f45d5de
+ARG QUARKUS_APP_DIR=target/quarkus-app/
+COPY ${QUARKUS_APP_DIR} /quarkus-app
+WORKDIR /quarkus-app
+ENTRYPOINT ["java","-jar","quarkus-run.jar"]

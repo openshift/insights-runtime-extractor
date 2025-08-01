@@ -1,0 +1,2 @@
+# corresponded to debian:12.11
+FROM debian@sha256:06adcd002b8d0c342b5997cea1a3015822dedf214f43d0d8e28fbf9578973505
