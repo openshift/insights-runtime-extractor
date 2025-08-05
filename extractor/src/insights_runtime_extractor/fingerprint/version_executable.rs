@@ -47,10 +47,3 @@ impl FingerPrint for VersionExecutable {
         None
     }
 }
-
-pub fn is_version_executable(process: &ContainerProcess) -> bool {
-    let proc_name = &process.name;
-    let proc_cmd = &process.command_line[0];
-
-    proc_name.ends_with("node") || proc_cmd.contains("python") || proc_cmd.contains("java")
-}

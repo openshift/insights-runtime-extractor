@@ -11,20 +11,44 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-func TestUbi9Minimal(t *testing.T) {
+func TestUbi10Minimal_10_0(t *testing.T) {
+	testBaseImage(t, "registry.access.redhat.com/ubi10-minimal:10.0", "rhel", "10.0")
+}
+
+func TestUbi9Minimal_9_6(t *testing.T) {
+	testBaseImage(t, "registry.access.redhat.com/ubi9-minimal:9.6", "rhel", "9.6")
+}
+
+func TestUbi9Minimal_9_4(t *testing.T) {
 	testBaseImage(t, "registry.access.redhat.com/ubi9-minimal:9.4", "rhel", "9.4")
 }
 
-func TestUbi8Minimal(t *testing.T) {
+func TestUbi8Minimal_8_10(t *testing.T) {
 	testBaseImage(t, "registry.access.redhat.com/ubi8/ubi-minimal:8.10", "rhel", "8.10")
 }
 
-func TestDebian(t *testing.T) {
+func TestDebian_12(t *testing.T) {
 	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/debian:12", "debian", "12")
 }
 
-func TestCentOs7(t *testing.T) {
+func TestDebian_11(t *testing.T) {
+	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/debian:11", "debian", "11")
+}
+
+func TestCentOs_10(t *testing.T) {
+	testBaseImage(t, "quay.io/centos/centos:10", "centos", "10")
+}
+
+func TestCentOs_7(t *testing.T) {
 	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/centos:7", "centos", "7")
+}
+
+func TestOracleLinux_10(t *testing.T) {
+	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/oraclelinux:10", "ol", "10.0")
+}
+
+func TestOracleLinux_8(t *testing.T) {
+	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/oraclelinux:8", "ol", "8.10")
 }
 
 func testBaseImage(t *testing.T, baseImage string, expectedOs string, expectedOsVersion string) {

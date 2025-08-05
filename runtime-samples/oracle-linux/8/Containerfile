@@ -1,0 +1,2 @@
+# corresponded to oraclelinux:8-slim (8.10 version)
+FROM docker.io/oraclelinux@sha256:22fb77ac567a594ecca9579e61b42b92209198761f53c3924afc97cd3283cfeb
