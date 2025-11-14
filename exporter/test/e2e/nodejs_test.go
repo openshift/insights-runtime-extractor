@@ -74,3 +74,25 @@ func TestNodeJS_24_4_1(t *testing.T) {
 	_ = testenv.Test(t, feature.Feature())
 }
 
+func TestNodeJS_25_1_0(t *testing.T) {
+	appName := "node-app-25-1-0"
+	containerName := "nodejs-25-1-0"
+	// corresponded to node:24.4.1-alpine3.22
+	image := "quay.io/insights-runtime-extractor-samples/node:25.1.0-alpine3.22"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Node.js from base image "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:          "alpine",
+			OsVersion:   "3.22.2",
+			Kind:        "Node.js",
+			KindVersion: "v25.1.0",
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
+

@@ -1,0 +1,4 @@
+# Eclipse Temurin 25.0.1_8-jdk-ubi10-minimal
+FROM eclipse-temurin@sha256:c9315bc59047b8f2e9eb89844f8443a08673d53ba9ee3e93bcc02a38e6b6657b
+COPY target/plain-java-0.0.1-SNAPSHOT-jar-with-dependencies.jar /plain-java-app.jar
+ENTRYPOINT ["java","-jar","/plain-java-app.jar"]

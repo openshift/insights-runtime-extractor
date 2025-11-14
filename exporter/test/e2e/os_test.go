@@ -27,6 +27,10 @@ func TestUbi8Minimal_8_10(t *testing.T) {
 	testBaseImage(t, "registry.access.redhat.com/ubi8/ubi-minimal:8.10", "rhel", "8.10")
 }
 
+func TestDebian_13(t *testing.T) {
+	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/debian:13", "debian", "13")
+}
+
 func TestDebian_12(t *testing.T) {
 	testBaseImage(t, "quay.io/insights-runtime-extractor-samples/debian:12", "debian", "12")
 }
