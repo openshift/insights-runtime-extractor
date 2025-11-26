@@ -215,6 +215,58 @@ func TestNativeQuarkus_3_24_4(t *testing.T) {
 	_ = testenv.Test(t, feature.Feature())
 }
 
+func TestQuarkus_3_29_2(t *testing.T) {
+
+	appName := "quarkus"
+	containerName := "main"
+	image := "quay.io/insights-runtime-extractor-samples/quarkus:3.29.2"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Quarkus from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:              "rhel",
+			OsVersion:       "8.10",
+			Kind:            "Java",
+			KindVersion:     "21.0.4",
+			KindImplementer: "Red Hat, Inc.",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "Quarkus",
+				Version: "3.29.2",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
+func TestNativeQuarkus_3_29_2(t *testing.T) {
+
+	appName := "native-quarkus"
+	containerName := "main"
+	image := "quay.io/insights-runtime-extractor-samples/native-quarkus:3.29.2"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Native Quarkus from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:        "rhel",
+			OsVersion: "8.10",
+			Kind:      "GraalVM",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "Quarkus",
+				Version: "3.29.2",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
 func TestRedHatBuildOfQuarkus_3_8_6(t *testing.T) {
 
 	appName := "quarkus"
@@ -289,6 +341,33 @@ func TestRedHatBuildOfQuarkus_3_20_1(t *testing.T) {
 			Runtimes: []types.RuntimeComponent{{
 				Name:    "Quarkus",
 				Version: "3.20.1.redhat-00003",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
+func TestRedHatBuildOfQuarkus_3_27_0(t *testing.T) {
+
+	appName := "quarkus"
+	containerName := "main"
+	image := "quay.io/insights-runtime-extractor-samples/rhbq-app:3.27.0"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Red Hat Build of Quarkus from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:              "rhel",
+			OsVersion:       "8.10",
+			Kind:            "Java",
+			KindVersion:     "21.0.8",
+			KindImplementer: "Red Hat, Inc.",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "Quarkus",
+				Version: "3.27.0.redhat-00001",
 			}},
 		}
 		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
