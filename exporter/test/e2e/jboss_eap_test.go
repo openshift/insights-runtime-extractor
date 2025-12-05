@@ -137,7 +137,7 @@ func TestJBossEAP_8_1(t *testing.T) {
 			KindImplementer: "Red Hat, Inc.",
 			Runtimes: []types.RuntimeComponent{{
 				Name:    "Red Hat JBoss Enterprise Application Platform",
-				Version: "8.1 Update 1.0",
+				Version: "8.1 Update 2.0",
 			}},
 		}
 		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
