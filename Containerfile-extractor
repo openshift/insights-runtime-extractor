@@ -1,4 +1,4 @@
-FROM registry.ci.openshift.org/ocp/4.21:base-rhel9 AS rust-builder
+FROM registry.ci.openshift.org/ocp/4.22:base-rhel9 AS rust-builder
 ARG TARGETARCH
 
 RUN dnf update -y && dnf -y install \
@@ -8,7 +8,7 @@ WORKDIR /workspace/extractor
 COPY extractor .
 RUN make TARGETARCH=${TARGETARCH}
 
-FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.21 AS go-builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-9-golang-1.24-openshift-4.22 AS go-builder
 
 WORKDIR /workspace/fingerprints
 COPY fingerprints .
@@ -16,7 +16,7 @@ ARG GO_LDFLAGS=""
 ENV GOEXPERIMENT=strictfipsruntime
 RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
 
-FROM registry.ci.openshift.org/ocp/4.21:base-rhel9
+FROM registry.ci.openshift.org/ocp/4.22:base-rhel9
 
 RUN dnf update -y && dnf -y install \
     cri-tools
