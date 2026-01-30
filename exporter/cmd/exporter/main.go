@@ -22,10 +22,32 @@ const (
 	EXTRACTOR_ADDRESS string = "127.0.0.1:3000"
 )
 
+// GatherRuntimeInfoRequest represents the JSON body for POST requests
+type GatherRuntimeInfoRequest struct {
+	ContainerIds []string `json:"containerIds"`
+}
+
 // gatherRuntimeInfo will trigger a new extraction of runtime info
 // and reply with a JSON payload
 func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
+	var containerIds []string
+
+	switch r.Method {
+	case "GET":
+		// GET scans all containers (empty containerIds)
+		containerIds = []string{}
+	case "POST":
+		var req GatherRuntimeInfoRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, `{"error": "Invalid JSON in request body"}`, http.StatusBadRequest)
+			return
+		}
+		if req.ContainerIds == nil {
+			http.Error(w, `{"error": "containerIds field is required"}`, http.StatusBadRequest)
+			return
+		}
+		containerIds = req.ContainerIds
+	default:
 		http.Error(w, "Method is not supported.", http.StatusNotFound)
 		return
 	}
@@ -34,7 +56,8 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 	hash := hashParam == "" || hashParam == "true"
 
 	startTime := time.Now()
-	dataPath, err := triggerRuntimeInfoExtraction()
+	dataPath, err := triggerRuntimeInfoExtraction(containerIds)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -63,7 +86,7 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
-func triggerRuntimeInfoExtraction() (string, error) {
+func triggerRuntimeInfoExtraction(containerIds []string) (string, error) {
 	conn, err := net.Dial("tcp", EXTRACTOR_ADDRESS)
 	if err != nil {
 		return "", err
@@ -71,10 +94,21 @@ func triggerRuntimeInfoExtraction() (string, error) {
 	defer conn.Close()
 
 	log.Println("Requesting a new runtime extraction")
-	// write to TCP connection to trigger a runtime extraction
-	fmt.Fprintf(conn, "")
+	tcpConn, ok := conn.(*net.TCPConn)
+	if !ok {
+		return "", fmt.Errorf("failed to get TCP connection")
+	}
 
-	dataPath, err := bufio.NewReader(conn).ReadString('\n')
+	// Send comma-separated container IDs (empty string if no specific containers requested)
+	payload := strings.Join(containerIds, ",")
+	// write to TCP connection to trigger a runtime extraction
+	fmt.Fprintf(tcpConn, "%s", payload)
+	// and close the write side to signal EOF to the server
+	if err := tcpConn.CloseWrite(); err != nil {
+		return "", fmt.Errorf("failed to close write side: %w", err)
+	}
+
+	dataPath, err := bufio.NewReader(tcpConn).ReadString('\n')
 	if err != nil {
 		return "", err
 	}
