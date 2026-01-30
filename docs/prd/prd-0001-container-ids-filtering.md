@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the changes required to support targeted container scanning via a list of container IDs. Currently, the system either scans all running containers or a single container. This enhancement will allow clients to request scanning of a specific subset of containers by providing their IDs in a POST request.
+This document describes the changes implemented to support targeted container scanning via a list of container IDs. Previously, the system only scanned all running containers. This enhancement allows clients to request scanning of a specific subset of containers by providing their IDs in a POST request.
 
 ## Motivation
 
@@ -10,35 +10,35 @@ This document describes the changes required to support targeted container scann
 
 ---
 
-## Current Architecture
+## Architecture
 
 ### Request Flow
 ```
 HTTP Client → Exporter (Go) → Extractor Server (Rust) → Coordinator (Rust) → Fingerprints
-             GET /gather_runtime_info    TCP 3000          /coordinator
+             GET/POST /gather_runtime_info    TCP 3000          /coordinator
 ```
 
-### Current Capabilities
-- **Exporter**: Only supports `GET /gather_runtime_info?hash=true|false`
-- **Extractor Server**: Receives empty TCP payload, spawns coordinator
-- **Coordinator**: Accepts optional single `--container-id <id>` argument (not used by the extractor server)
+### Capabilities
+- **Exporter**: Supports `GET /gather_runtime_info?hash=true|false` (scans all) and `POST /gather_runtime_info` (scans specific containers)
+- **Extractor Server**: Receives comma-separated container IDs via TCP, spawns coordinator with IDs as argument
+- **Coordinator**: Accepts optional `container_ids` positional argument (comma-separated list)
 
 ---
 
-## Proposed Changes
+## Implemented Changes
 
 ### 1. Exporter HTTP Server (Go)
 
 **File**: `exporter/cmd/exporter/main.go`
 
-#### New Endpoint
-Add a new HTTP POST endpoint alongside the existing GET endpoint:
+#### Endpoints
 
 | Method | Path | Request Body | Description |
 |--------|------|--------------|-------------|
+| GET | `/gather_runtime_info` | None | Scan all containers |
 | POST | `/gather_runtime_info` | JSON object with container IDs | Scan specific containers |
 
-#### Request Format
+#### Request Format (POST)
 ```json
 {
   "containerIds": ["abc123...", "def456...", "ghi789..."]
@@ -49,38 +49,35 @@ Add a new HTTP POST endpoint alongside the existing GET endpoint:
 - Request body must be valid JSON
 - `containerIds` field must be present and be an array
 - Array can be empty (equivalent to scanning all containers)
-- Each container ID must be a non-empty string
-- Container IDs should be the short or full CRI-O container ID format
+- Container IDs must be in full CRI-O format, with or without `cri-o://` prefix
 
-#### Changes Required
+#### Implementation
 
-1. **Add JSON request struct**:
+1. **JSON request struct**:
    ```go
    type GatherRuntimeInfoRequest struct {
        ContainerIds []string `json:"containerIds"`
    }
    ```
 
-2. **Update HTTP handler**:
-   - Parse request method (GET vs POST)
-   - For POST: parse JSON body and validate
-   - Pass container IDs to `triggerRuntimeInfoExtraction()`
+2. **HTTP handler** (`gatherRuntimeInfo`):
+   - For GET: uses empty `containerIds` slice
+   - For POST: decodes JSON body and validates `containerIds` field is present
+   - Passes container IDs to `triggerRuntimeInfoExtraction()`
 
-3. **Update `triggerRuntimeInfoExtraction()` function**:
-   - Add parameter: `containerIds []string`
-   - Serialize container IDs as a single string of comma-separated container IDs before sending over TCP
-   - Send string payload instead of empty payload to extractor server
+3. **`triggerRuntimeInfoExtraction()` function**:
+   - Accepts `containerIds []string` parameter
+   - Joins container IDs with commas: `strings.Join(containerIds, ",")`
+   - Sends payload via TCP
+   - **Calls `tcpConn.CloseWrite()` to signal EOF** - this is critical because the Rust server uses `read_to_string()` which reads until EOF
 
-4. **TCP Protocol Change**:
-   - Current: Empty payload triggers extraction
-   - New: String payload with a list of comma-separated container IDs
-   ```
-   "abc123,def456,..."
-   ```
-   - Empty string means "scan all containers"
+#### TCP Protocol
+- Client sends comma-separated container IDs as plain text
+- Client calls `CloseWrite()` to signal end of data
+- Server responds with path to extracted data
 
 #### Backward Compatibility
-- GET endpoint behavior remains unchanged (scans all containers)
+- GET endpoint behavior unchanged (scans all containers)
 - GET internally sends an empty string `""` to maintain protocol consistency
 
 ---
@@ -89,39 +86,28 @@ Add a new HTTP POST endpoint alongside the existing GET endpoint:
 
 **File**: `extractor/src/bin/extractor_server.rs`
 
-#### Changes Required
+#### Implementation
 
-1. **Update `handle_trigger_extraction()` function**:
-   - Read incoming data from TCP stream (currently ignored) as a String
-   - Pas the incoming data to the CLI argument if not empty. Wrap them in a String.
-   
-2. **Update coordinator invocation**:
-   - Current:
-     ```rust
-     Command::new("/coordinator")
-         .arg("--log-level")
-         .arg(log_level)
-         .output()
-     ```
-   - New (when container IDs provided):
-     ```rust
-     Command::new("/coordinator")
-         .arg("--log-level")
-         .arg(log_level)
-         .arg(container_ids)
-         .output()
-     ```
+1. **`handle_trigger_extraction()` function**:
+   - Reads incoming data from TCP stream using `read_to_string()` (reads until EOF)
+   - Trims the received string
+   - Passes container IDs as positional argument to coordinator
 
-3. **Error Handling**:
-   - Invalid String: Return error response via TCP
-   - Log validation errors at warn level
+2. **Coordinator invocation**:
+   ```rust
+   Command::new("/coordinator")
+       .arg("--log-level")
+       .arg(log_level)
+       .arg(container_ids)  // comma-separated string, passed even if empty
+       .output()
+   ```
 
 #### TCP Protocol
 
 | Direction | Format | Example |
 |-----------|--------|---------|
-| Request | Plain text | `abc123,def456` |
-| Response | Plain text (path) | `data/out-1234567890` |
+| Request | Plain text (read until EOF) | `abc123,def456` |
+| Response | Plain text (path) | `data/out-1234567890\n` |
 
 ---
 
@@ -129,61 +115,50 @@ Add a new HTTP POST endpoint alongside the existing GET endpoint:
 
 **File**: `extractor/src/bin/coordinator.rs`
 
-#### Current Arguments
+#### CLI Arguments
 ```rust
 #[arg(short, long)]
 log_level: Option<String>
 
-#[arg(help = "ID of the container to scan. If absent, all containers are scanned")]
-container_id: Option<String>
-```
-
-#### New Arguments
-```rust
-#[arg(short, long)]
-log_level: Option<String>
-
-#[arg(help = "Comma-separated list of container IDs to scan")]
+#[arg(help = "Comma-separated list of container IDs to scan. If absent, all containers are scanned")]
 container_ids: Option<String>
 ```
 
-#### Changes Required
+#### Implementation
 
-1. **Add new CLI argument**:
-   - Change `container_id` to `container_ids` so that multiple containers ID can be passed (separated by commas)
-   - Parse them into `Vec<String>`
+1. **Parsing container IDs**:
+   ```rust
+   let container_ids: Vec<String> = args
+       .container_ids
+       .map(|ids| {
+           ids.split(',')
+               .map(|id| id.trim().to_string())
+               .filter(|id| !id.is_empty())
+               .collect()
+       })
+       .unwrap_or_default();
+   ```
 
-2. **Update container filtering logic**:
+2. **Container retrieval**:
+   - Calls `get_containers(container_ids)` passing the parsed vector
+   - Empty vector means "scan all containers"
 
-   - Current location in coordinator.rs `main()`:
-     ```rust
-      let containers = match args.container_id {
-        None => get_containers(),
-        Some(container_id) => match get_container(&container_id) {
-            Some(container) => vec![container],
-            None => vec![],
-        },
-    };
-     ```
-   - New logic:
-     ```rust
-      let containers = match args.container_ids {         
-        None => get_containers(),
-        Some(container_ids) => {
-         // split them from commas,
-         // iterate on them: for each trimmed non-empty container ID,
-         // call get_container(container_id)
-         // and collect them in a Vector
-        },
-      };
+3. **Logging**:
+   - Logs "Scanning X containers" at info level
 
-     ```
-3. **Update container information retrieval**:
+---
 
-   - Update `get_container(container_id: &String)` to invoke `crictl inspect $container_id` instead of `crictl ps`. 
+### 4. Container Module (Rust)
 
-4. **Logging**:
-   - Log at info level: "Scanning X containers"
+**File**: `extractor/src/insights_runtime_extractor/container.rs`
+
+#### Implementation
+
+1. **`get_containers(container_ids: Vec<String>)` function**:
+   - Normalizes container IDs by stripping `cri-o://` prefix if present
+   - Runs `crictl ps -o json -s RUNNING` to get all running containers
+   - If `container_ids` is not empty, filters to only include matching containers
+   - Returns `Vec<Container>`
 
 ---
 
@@ -202,17 +177,18 @@ container_ids: Option<String>
 │                        EXPORTER (Go) - Port 8000                            │
 │                                                                             │
 │  1. Parse POST body as JSON                                                 │
-│  2. Validate containerIds array                                             │
+│  2. Validate containerIds field is present                                  │
 │  3. Send comma-separated containerIds to extractor_server via TCP           │
+│  4. Call CloseWrite() to signal EOF                                         │
 └─────────────────────────────────┬───────────────────────────────────────────┘
                                   │
-                    TCP: abc123,def456
+                    TCP: "abc123,def456" + EOF
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                    EXTRACTOR_SERVER (Rust) - Port 3000                      │
 │                                                                             │
-│  1. Read String from TCP stream                                             │
+│  1. Read String from TCP stream until EOF (read_to_string)                  │
 │  2. Execute: /coordinator --log-level info "abc123,def456"                  │
 └─────────────────────────────────┬───────────────────────────────────────────┘
                                   │
@@ -222,8 +198,9 @@ container_ids: Option<String>
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         COORDINATOR (Rust)                                  │
 │                                                                             │
-│  1. Parse executable argument                                               │
-│  2. Get all running containers via crictl                                   │
+│  1. Parse comma-separated container IDs from argument                       │
+│  2. Get all running containers via crictl ps                                │
+│  3. Filter to only requested containers (if any specified)                  │
 │  4. Scan filtered containers                                                │
 │  5. Output path to stdout                                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -252,7 +229,7 @@ Content-Type: application/json
 **Field Descriptions**:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| containerIds | string[] | Yes | List of container IDs to scan. Empty array scans all containers. |
+| containerIds | string[] | Yes | List of container IDs to scan. Empty array scans all containers. Supports full CRI-O IDs, with or without `cri-o://` prefix. |
 
 #### Response
 
@@ -260,19 +237,17 @@ Same as existing GET endpoint response:
 
 ```json
 {
-  "node-name": {
-    "namespace-1": {
-      "pod-name-1": {
-        "container-name-1": {
-          "os": "rhel",
-          "osVersion": "8.9",
-          "kind": "Java",
-          "kindVersion": "17.0.9",
-          "kindImplementer": "Red Hat, Inc.",
-          "runtimes": [
-            {"name": "Quarkus", "version": "3.2.0"}
-          ]
-        }
+  "namespace-1": {
+    "pod-name-1": {
+      "container-id-1": {
+        "os": "rhel",
+        "osVersion": "8.9",
+        "kind": "Java",
+        "kindVersion": "17.0.9",
+        "kindImplementer": "Red Hat, Inc.",
+        "runtimes": [
+          {"name": "Quarkus", "version": "3.2.0"}
+        ]
       }
     }
   }
@@ -285,29 +260,9 @@ Same as existing GET endpoint response:
 |--------|-----------|---------------|
 | 400 | Invalid JSON | `{"error": "Invalid JSON in request body"}` |
 | 400 | Missing containerIds | `{"error": "containerIds field is required"}` |
-| 400 | Invalid container ID format | `{"error": "Container ID at index N is invalid"}` |
-| 500 | Extraction failed | `{"error": "Runtime extraction failed: <details>"}` |
+| 500 | Extraction failed | Error message from extraction process |
 
 ---
-
-## Testing Requirements
-
-### Unit Tests
-
-1. **Exporter**:
-   - JSON parsing of valid request body
-   - Validation of container ID formats
-   - Empty array handling
-   - Malformed JSON rejection
-
-2. **Extractor Server**:
-   - JSON deserialization from TCP stream
-   - Container ID validation
-   - Command argument construction
-
-3. **Coordinator**:
-   - Comma-separated parsing of the main argument
-   - Container filtering logic
 
 ### Integration Tests
 
@@ -325,7 +280,7 @@ Same as existing GET endpoint response:
 
 4. **Mixed valid/invalid IDs**:
    - Some IDs exist, some don't
-   - Should scan existing ones, log warnings for missing
+   - Should scan existing ones only
 
 ### E2E Tests
 
@@ -335,39 +290,13 @@ Add test cases to existing e2e test suite in `runtime-samples/`:
 
 ---
 
-## Implementation Phases
-
-### Phase 1: Coordinator Changes
-1. Change main argument `container_ids` to `container_id`
-2. Implement container filtering logic
-3. Add unit tests
-4. Manual testing with direct coordinator invocation
-
-### Phase 2: Extractor Server Changes
-1. Update coordinator invocation
-2. Add error handling
-3. Add unit tests
-
-### Phase 3: Exporter Changes
-1. Add POST endpoint handler
-2. Implement JSON validation
-3. Update TCP communication
-4. Add unit tests
-
-### Phase 4: Integration & E2E
-1. Integration tests
-2. E2E tests in runtime-samples
-3. Documentation updates
-
----
-
 ## Backward Compatibility
 
 | Component | Backward Compatible | Notes |
 |-----------|---------------------|-------|
 | Exporter | Yes | GET endpoint unchanged |
-| Extractor Server | Yes | Empty payload treated as empty containerIds |
-| Coordinator | Yes | passing a singular container ID still works |
+| Extractor Server | Yes | Empty string treated as "scan all" |
+| Coordinator | Yes | Empty/missing argument scans all containers |
 
 ---
 
@@ -379,23 +308,25 @@ Add test cases to existing e2e test suite in `runtime-samples/`:
 
 ---
 
-## Open Questions
+## Design Decisions
 
-1. **Container ID format**: Should we support both short (12-char) and full (64-char) container IDs?
-   - Recommendation: Yes, support both with prefix matching
+1. **Container ID format**: Full (64-char) container IDs are supported. The `cri-o://` prefix is automatically stripped if present.
 
-2. **Maximum number of container IDs**: Should there be a limit?
-   - Recommendation: No hard limit, but document performance implications
+2. **Maximum number of container IDs**: No hard limit imposed.
 
-3. **Response for non-existent IDs**: Should we return an error or just skip missing containers?
-   - Recommendation: Skip missing, return results for found containers, log warnings
+3. **Response for non-existent IDs**: Missing containers are silently skipped. Results are returned for found containers only.
+
+4. **TCP EOF signaling**: The Go exporter uses `CloseWrite()` to signal EOF because the Rust server uses `read_to_string()` which reads until EOF.
+
+5. **Filtering approach**: Instead of calling `crictl inspect` for each container ID, the implementation fetches all running containers with `crictl ps` and filters in memory. This is simpler and avoids multiple subprocess calls.
 
 ---
 
-## Files to Modify
+## Files Modified
 
 | File | Changes |
 |------|---------|
-| `exporter/cmd/exporter/main.go` | Add POST handler, JSON parsing, update TCP payload |
-| `extractor/src/bin/extractor_server.rs` | Add JSON deserialization, update coordinator args |
-| `extractor/src/bin/coordinator.rs` | Change main argument, filtering logic |
+| `exporter/cmd/exporter/main.go` | Add POST handler, JSON parsing, TCP EOF signaling with CloseWrite() |
+| `extractor/src/bin/extractor_server.rs` | Read container IDs from TCP stream, pass to coordinator |
+| `extractor/src/bin/coordinator.rs` | Accept container_ids positional argument, parse and pass to get_containers |
+| `extractor/src/insights_runtime_extractor/container.rs` | Update get_containers to accept Vec<String> and filter containers |
