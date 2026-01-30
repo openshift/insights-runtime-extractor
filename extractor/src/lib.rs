@@ -1,7 +1,6 @@
 mod insights_runtime_extractor;
 
 pub use crate::insights_runtime_extractor::config;
-pub use crate::insights_runtime_extractor::container::get_container;
 pub use crate::insights_runtime_extractor::container::get_containers;
 pub use crate::insights_runtime_extractor::file;
 pub use crate::insights_runtime_extractor::perms;

@@ -71,7 +71,7 @@ pub fn scan_container(config: &Config, out: &String, container: &Container) {
     let leaves = process::get_process_leaves(&root_pid);
 
     // fingerprint only the first process
-    info!("🔎  Fingerprinting {} processes...", leaves.len());
+    debug!("🔎  Fingerprinting {} processes...", leaves.len());
 
     if let Some(process) = leaves.get(0) {
         // create a directory to store this process' fingerprints
