@@ -1,7 +1,7 @@
 use clap::Parser;
-use log::{error, info, trace};
+use log::{error, info, trace, warn};
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::net::{Shutdown, TcpListener, TcpStream};
 use std::process::Command;
 use std::thread;
@@ -60,10 +60,22 @@ fn handle_trigger_extraction(mut stream: TcpStream, log_level: String) {
 
     let start = Instant::now();
 
+    // Read container IDs from TCP stream until EOF
+    let mut buffer = String::new();
+    if let Err(e) = stream.read_to_string(&mut buffer) {
+        warn!("Failed to read from socket; err = {:?}", e);
+        if let Err(e) = stream.shutdown(Shutdown::Both) {
+            error!("Failed to shutdown socket; err = {:?}", e);
+        }
+        return;
+    }
+    let container_ids = buffer.trim().to_string();
+
     // Execute the "extractor_coordinator" program
     let output = Command::new("/coordinator")
         .arg("--log-level")
         .arg(log_level)
+        .arg(container_ids)
         .output();
     match output {
         Ok(output) => {
