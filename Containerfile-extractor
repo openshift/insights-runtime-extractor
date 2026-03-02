@@ -1,9 +1,10 @@
 FROM registry.ci.openshift.org/ocp/4.21:base-rhel9 AS rust-builder
 ARG TARGETARCH
 
-RUN dnf update -y && dnf -y install \
-    gcc make wget rust-toolset rustfmt
-
+RUN dnf update -y && \
+    dnf -y install gcc make wget rust-toolset rustfmt && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf/*
 WORKDIR /workspace/extractor
 COPY extractor .
 RUN make TARGETARCH=${TARGETARCH}
@@ -18,8 +19,10 @@ RUN CGO_ENABLED=0 GOOS=linux GO111MODULE=on make build
 
 FROM registry.ci.openshift.org/ocp/4.21:base-rhel9
 
-RUN dnf update -y && dnf -y install \
-    cri-tools
+RUN dnf update -y && \
+    dnf -y install cri-tools && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf/*
 
 COPY --from=rust-builder /workspace/extractor/config/ /
 COPY --from=rust-builder /workspace/extractor/target/release/extractor_server /extractor_server
