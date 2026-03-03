@@ -1,8 +1,6 @@
 approvers:
-- tremes
 - jmesnil
 reviewers:
-- tremes
 - jmesnil
 
 component: "Insights Runtime Extractor"
