@@ -18,58 +18,13 @@ pub struct Container {
     pub pid: u32,
 }
 
-pub fn get_container(container_id: &String) -> Option<Container> {
-    info!("🔎  Reading container information with crictl...");
+pub fn get_containers(container_ids: Vec<String>) -> Vec<Container> {
+    // Normalize container_ids by stripping the cri-o:// prefix
+    let ids_to_collect: Vec<String> = container_ids
+        .iter()
+        .map(|id| id.strip_prefix("cri-o://").unwrap_or(id).to_string())
+        .collect();
 
-    let output = Command::new("crictl")
-        .args(["ps", "-o", "json", "-s", "RUNNING"])
-        .output()
-        .expect("List containers with crictl");
-    let json = String::from_utf8(output.stdout).unwrap();
-
-    let deserialized_containers: Value = serde_json::from_str(&json).unwrap();
-
-    let container_id = match container_id.strip_prefix("cri-o://") {
-        Some(container_id) => container_id.to_string(),
-        None => container_id.to_string(),
-    };
-
-    for c in deserialized_containers["containers"].as_array().unwrap() {
-        let id = c["id"].as_str().unwrap().to_string();
-
-        match id == container_id {
-            false => {}
-            true => {
-                let pod_namespace = c["labels"]["io.kubernetes.pod.namespace"]
-                    .as_str()
-                    .unwrap()
-                    .to_string();
-                let image_ref = c["imageRef"].as_str().unwrap().to_string();
-                let name = c["labels"]["io.kubernetes.container.name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string();
-                let pod_name = c["labels"]["io.kubernetes.pod.name"]
-                    .as_str()
-                    .unwrap()
-                    .to_string();
-                let pid: u32 = get_root_pid(&id);
-                return Some(Container {
-                    id: "cri-o://".to_owned() + &id,
-                    image_ref,
-                    name,
-                    pod_name,
-                    pod_namespace,
-                    pid,
-                });
-            }
-        }
-    }
-
-    None
-}
-
-pub fn get_containers() -> Vec<Container> {
     info!("🔎  Reading container information with crictl...");
 
     let output = Command::new("crictl")
@@ -85,12 +40,17 @@ pub fn get_containers() -> Vec<Container> {
     let mut containers: Vec<Container> = Vec::new();
 
     for c in deserialized_containers["containers"].as_array().unwrap() {
+        let id = c["id"].as_str().unwrap().to_string();
+
+        // If ids_to_collect is not empty, skip containers not in the list
+        if !ids_to_collect.is_empty() && !ids_to_collect.contains(&id) {
+            continue;
+        }
+
         let pod_namespace = c["labels"]["io.kubernetes.pod.namespace"]
             .as_str()
             .unwrap()
             .to_string();
-
-        let id = c["id"].as_str().unwrap().to_string();
         let image_ref = c["imageRef"].as_str().unwrap().to_string();
         let name = c["labels"]["io.kubernetes.container.name"]
             .as_str()

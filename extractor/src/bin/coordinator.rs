@@ -2,7 +2,7 @@ use clap::Parser;
 use log::info;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use insights_runtime_extractor::{config, file, get_container, get_containers, perms};
+use insights_runtime_extractor::{config, file, get_containers, perms};
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -14,8 +14,10 @@ struct Args {
     )]
     log_level: Option<String>,
 
-    #[arg(help = "ID of the container to scan. If absent, all containers are scanned")]
-    container_id: Option<String>,
+    #[arg(
+        help = "Comma-separated list of container IDs to scan. If absent, all containers are scanned"
+    )]
+    container_ids: Option<String>,
 }
 
 fn main() {
@@ -43,13 +45,19 @@ fn main() {
         &exec_dir
     );
 
-    let containers = match args.container_id {
-        None => get_containers(),
-        Some(container_id) => match get_container(&container_id) {
-            Some(container) => vec![container],
-            None => vec![],
-        },
-    };
+    let container_ids: Vec<String> = args
+        .container_ids
+        .map(|ids| {
+            ids.split(',')
+                .map(|id| id.trim().to_string())
+                .filter(|id| !id.is_empty())
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let containers = get_containers(container_ids);
+
+    info!("Scanning {} containers", containers.len());
 
     for container in containers {
         info!(
