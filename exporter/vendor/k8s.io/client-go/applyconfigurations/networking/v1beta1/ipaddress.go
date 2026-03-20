@@ -29,22 +29,10 @@ import (
 
 // IPAddressApplyConfiguration represents a declarative configuration of the IPAddress type for use
 // with apply.
-//
-// IPAddress represents a single IP of a single IP Family. The object is designed to be used by APIs
-// that operate on IP addresses. The object is used by the Service core API for allocation of IP addresses.
-// An IP address can be represented in different formats, to guarantee the uniqueness of the IP,
-// the name of the object is the IP address in canonical format, four decimal digits separated
-// by dots suppressing leading zeros for IPv4 and the representation defined by RFC 5952 for IPv6.
-// Valid: 192.168.1.5 or 2001:db8::1 or 2001:db8:aaaa:bbbb:cccc:dddd:eeee:1
-// Invalid: 10.01.2.3 or 2001:db8:0:0:0::1
 type IPAddressApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	// spec is the desired state of the IPAddress.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Spec *IPAddressSpecApplyConfiguration `json:"spec,omitempty"`
+	Spec                             *IPAddressSpecApplyConfiguration `json:"spec,omitempty"`
 }
 
 // IPAddress constructs a declarative configuration of the IPAddress type for use with
@@ -57,14 +45,29 @@ func IPAddress(name string) *IPAddressApplyConfiguration {
 	return b
 }
 
-// ExtractIPAddressFrom extracts the applied configuration owned by fieldManager from
-// iPAddress for the specified subresource. Pass an empty string for subresource to extract
-// the main resource. Common subresources include "status", "scale", etc.
+// ExtractIPAddress extracts the applied configuration owned by fieldManager from
+// iPAddress. If no managedFields are found in iPAddress for fieldManager, a
+// IPAddressApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
 // iPAddress must be a unmodified IPAddress API object that was retrieved from the Kubernetes API.
-// ExtractIPAddressFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// ExtractIPAddress provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractIPAddressFrom(iPAddress *networkingv1beta1.IPAddress, fieldManager string, subresource string) (*IPAddressApplyConfiguration, error) {
+// Experimental!
+func ExtractIPAddress(iPAddress *networkingv1beta1.IPAddress, fieldManager string) (*IPAddressApplyConfiguration, error) {
+	return extractIPAddress(iPAddress, fieldManager, "")
+}
+
+// ExtractIPAddressStatus is the same as ExtractIPAddress except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractIPAddressStatus(iPAddress *networkingv1beta1.IPAddress, fieldManager string) (*IPAddressApplyConfiguration, error) {
+	return extractIPAddress(iPAddress, fieldManager, "status")
+}
+
+func extractIPAddress(iPAddress *networkingv1beta1.IPAddress, fieldManager string, subresource string) (*IPAddressApplyConfiguration, error) {
 	b := &IPAddressApplyConfiguration{}
 	err := managedfields.ExtractInto(iPAddress, internal.Parser().Type("io.k8s.api.networking.v1beta1.IPAddress"), fieldManager, b, subresource)
 	if err != nil {
@@ -77,27 +80,11 @@ func ExtractIPAddressFrom(iPAddress *networkingv1beta1.IPAddress, fieldManager s
 	return b, nil
 }
 
-// ExtractIPAddress extracts the applied configuration owned by fieldManager from
-// iPAddress. If no managedFields are found in iPAddress for fieldManager, a
-// IPAddressApplyConfiguration is returned with only the Name, Namespace (if applicable),
-// APIVersion and Kind populated. It is possible that no managed fields were found for because other
-// field managers have taken ownership of all the fields previously owned by fieldManager, or because
-// the fieldManager never owned fields any fields.
-// iPAddress must be a unmodified IPAddress API object that was retrieved from the Kubernetes API.
-// ExtractIPAddress provides a way to perform a extract/modify-in-place/apply workflow.
-// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
-// applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractIPAddress(iPAddress *networkingv1beta1.IPAddress, fieldManager string) (*IPAddressApplyConfiguration, error) {
-	return ExtractIPAddressFrom(iPAddress, fieldManager, "")
-}
-
-func (b IPAddressApplyConfiguration) IsApplyConfiguration() {}
-
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithKind(value string) *IPAddressApplyConfiguration {
-	b.TypeMetaApplyConfiguration.Kind = &value
+	b.Kind = &value
 	return b
 }
 
@@ -105,7 +92,7 @@ func (b *IPAddressApplyConfiguration) WithKind(value string) *IPAddressApplyConf
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithAPIVersion(value string) *IPAddressApplyConfiguration {
-	b.TypeMetaApplyConfiguration.APIVersion = &value
+	b.APIVersion = &value
 	return b
 }
 
@@ -114,7 +101,7 @@ func (b *IPAddressApplyConfiguration) WithAPIVersion(value string) *IPAddressApp
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithName(value string) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Name = &value
+	b.Name = &value
 	return b
 }
 
@@ -123,7 +110,7 @@ func (b *IPAddressApplyConfiguration) WithName(value string) *IPAddressApplyConf
 // If called multiple times, the GenerateName field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithGenerateName(value string) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.GenerateName = &value
+	b.GenerateName = &value
 	return b
 }
 
@@ -132,7 +119,7 @@ func (b *IPAddressApplyConfiguration) WithGenerateName(value string) *IPAddressA
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithNamespace(value string) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Namespace = &value
+	b.Namespace = &value
 	return b
 }
 
@@ -141,7 +128,7 @@ func (b *IPAddressApplyConfiguration) WithNamespace(value string) *IPAddressAppl
 // If called multiple times, the UID field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithUID(value types.UID) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.UID = &value
+	b.UID = &value
 	return b
 }
 
@@ -150,7 +137,7 @@ func (b *IPAddressApplyConfiguration) WithUID(value types.UID) *IPAddressApplyCo
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithResourceVersion(value string) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
+	b.ResourceVersion = &value
 	return b
 }
 
@@ -159,7 +146,7 @@ func (b *IPAddressApplyConfiguration) WithResourceVersion(value string) *IPAddre
 // If called multiple times, the Generation field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithGeneration(value int64) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Generation = &value
+	b.Generation = &value
 	return b
 }
 
@@ -168,7 +155,7 @@ func (b *IPAddressApplyConfiguration) WithGeneration(value int64) *IPAddressAppl
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithCreationTimestamp(value metav1.Time) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
+	b.CreationTimestamp = &value
 	return b
 }
 
@@ -177,7 +164,7 @@ func (b *IPAddressApplyConfiguration) WithCreationTimestamp(value metav1.Time) *
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
+	b.DeletionTimestamp = &value
 	return b
 }
 
@@ -186,7 +173,7 @@ func (b *IPAddressApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
 func (b *IPAddressApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
+	b.DeletionGracePeriodSeconds = &value
 	return b
 }
 
@@ -196,11 +183,11 @@ func (b *IPAddressApplyConfiguration) WithDeletionGracePeriodSeconds(value int64
 // overwriting an existing map entries in Labels field with the same key.
 func (b *IPAddressApplyConfiguration) WithLabels(entries map[string]string) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
+	if b.Labels == nil && len(entries) > 0 {
+		b.Labels = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Labels[k] = v
+		b.Labels[k] = v
 	}
 	return b
 }
@@ -211,11 +198,11 @@ func (b *IPAddressApplyConfiguration) WithLabels(entries map[string]string) *IPA
 // overwriting an existing map entries in Annotations field with the same key.
 func (b *IPAddressApplyConfiguration) WithAnnotations(entries map[string]string) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
+	if b.Annotations == nil && len(entries) > 0 {
+		b.Annotations = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Annotations[k] = v
+		b.Annotations[k] = v
 	}
 	return b
 }
@@ -229,7 +216,7 @@ func (b *IPAddressApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerRef
 		if values[i] == nil {
 			panic("nil value passed to WithOwnerReferences")
 		}
-		b.ObjectMetaApplyConfiguration.OwnerReferences = append(b.ObjectMetaApplyConfiguration.OwnerReferences, *values[i])
+		b.OwnerReferences = append(b.OwnerReferences, *values[i])
 	}
 	return b
 }
@@ -240,7 +227,7 @@ func (b *IPAddressApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerRef
 func (b *IPAddressApplyConfiguration) WithFinalizers(values ...string) *IPAddressApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
-		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
+		b.Finalizers = append(b.Finalizers, values[i])
 	}
 	return b
 }
@@ -259,24 +246,8 @@ func (b *IPAddressApplyConfiguration) WithSpec(value *IPAddressSpecApplyConfigur
 	return b
 }
 
-// GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *IPAddressApplyConfiguration) GetKind() *string {
-	return b.TypeMetaApplyConfiguration.Kind
-}
-
-// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *IPAddressApplyConfiguration) GetAPIVersion() *string {
-	return b.TypeMetaApplyConfiguration.APIVersion
-}
-
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *IPAddressApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Name
-}
-
-// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *IPAddressApplyConfiguration) GetNamespace() *string {
-	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Namespace
+	return b.Name
 }

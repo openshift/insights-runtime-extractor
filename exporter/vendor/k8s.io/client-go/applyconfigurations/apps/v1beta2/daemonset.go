@@ -29,24 +29,11 @@ import (
 
 // DaemonSetApplyConfiguration represents a declarative configuration of the DaemonSet type for use
 // with apply.
-//
-// DEPRECATED - This group version of DaemonSet is deprecated by apps/v1/DaemonSet. See the release notes for
-// more information.
-// DaemonSet represents the configuration of a daemon set.
 type DaemonSetApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	// Standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	// The desired behavior of this daemon set.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Spec *DaemonSetSpecApplyConfiguration `json:"spec,omitempty"`
-	// The current status of this daemon set. This data may be
-	// out of date by some window of time.
-	// Populated by the system.
-	// Read-only.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Status *DaemonSetStatusApplyConfiguration `json:"status,omitempty"`
+	Spec                             *DaemonSetSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *DaemonSetStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // DaemonSet constructs a declarative configuration of the DaemonSet type for use with
@@ -60,14 +47,29 @@ func DaemonSet(name, namespace string) *DaemonSetApplyConfiguration {
 	return b
 }
 
-// ExtractDaemonSetFrom extracts the applied configuration owned by fieldManager from
-// daemonSet for the specified subresource. Pass an empty string for subresource to extract
-// the main resource. Common subresources include "status", "scale", etc.
+// ExtractDaemonSet extracts the applied configuration owned by fieldManager from
+// daemonSet. If no managedFields are found in daemonSet for fieldManager, a
+// DaemonSetApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
 // daemonSet must be a unmodified DaemonSet API object that was retrieved from the Kubernetes API.
-// ExtractDaemonSetFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// ExtractDaemonSet provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractDaemonSetFrom(daemonSet *appsv1beta2.DaemonSet, fieldManager string, subresource string) (*DaemonSetApplyConfiguration, error) {
+// Experimental!
+func ExtractDaemonSet(daemonSet *appsv1beta2.DaemonSet, fieldManager string) (*DaemonSetApplyConfiguration, error) {
+	return extractDaemonSet(daemonSet, fieldManager, "")
+}
+
+// ExtractDaemonSetStatus is the same as ExtractDaemonSet except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractDaemonSetStatus(daemonSet *appsv1beta2.DaemonSet, fieldManager string) (*DaemonSetApplyConfiguration, error) {
+	return extractDaemonSet(daemonSet, fieldManager, "status")
+}
+
+func extractDaemonSet(daemonSet *appsv1beta2.DaemonSet, fieldManager string, subresource string) (*DaemonSetApplyConfiguration, error) {
 	b := &DaemonSetApplyConfiguration{}
 	err := managedfields.ExtractInto(daemonSet, internal.Parser().Type("io.k8s.api.apps.v1beta2.DaemonSet"), fieldManager, b, subresource)
 	if err != nil {
@@ -81,33 +83,11 @@ func ExtractDaemonSetFrom(daemonSet *appsv1beta2.DaemonSet, fieldManager string,
 	return b, nil
 }
 
-// ExtractDaemonSet extracts the applied configuration owned by fieldManager from
-// daemonSet. If no managedFields are found in daemonSet for fieldManager, a
-// DaemonSetApplyConfiguration is returned with only the Name, Namespace (if applicable),
-// APIVersion and Kind populated. It is possible that no managed fields were found for because other
-// field managers have taken ownership of all the fields previously owned by fieldManager, or because
-// the fieldManager never owned fields any fields.
-// daemonSet must be a unmodified DaemonSet API object that was retrieved from the Kubernetes API.
-// ExtractDaemonSet provides a way to perform a extract/modify-in-place/apply workflow.
-// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
-// applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractDaemonSet(daemonSet *appsv1beta2.DaemonSet, fieldManager string) (*DaemonSetApplyConfiguration, error) {
-	return ExtractDaemonSetFrom(daemonSet, fieldManager, "")
-}
-
-// ExtractDaemonSetStatus extracts the applied configuration owned by fieldManager from
-// daemonSet for the status subresource.
-func ExtractDaemonSetStatus(daemonSet *appsv1beta2.DaemonSet, fieldManager string) (*DaemonSetApplyConfiguration, error) {
-	return ExtractDaemonSetFrom(daemonSet, fieldManager, "status")
-}
-
-func (b DaemonSetApplyConfiguration) IsApplyConfiguration() {}
-
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithKind(value string) *DaemonSetApplyConfiguration {
-	b.TypeMetaApplyConfiguration.Kind = &value
+	b.Kind = &value
 	return b
 }
 
@@ -115,7 +95,7 @@ func (b *DaemonSetApplyConfiguration) WithKind(value string) *DaemonSetApplyConf
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithAPIVersion(value string) *DaemonSetApplyConfiguration {
-	b.TypeMetaApplyConfiguration.APIVersion = &value
+	b.APIVersion = &value
 	return b
 }
 
@@ -124,7 +104,7 @@ func (b *DaemonSetApplyConfiguration) WithAPIVersion(value string) *DaemonSetApp
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithName(value string) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Name = &value
+	b.Name = &value
 	return b
 }
 
@@ -133,7 +113,7 @@ func (b *DaemonSetApplyConfiguration) WithName(value string) *DaemonSetApplyConf
 // If called multiple times, the GenerateName field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithGenerateName(value string) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.GenerateName = &value
+	b.GenerateName = &value
 	return b
 }
 
@@ -142,7 +122,7 @@ func (b *DaemonSetApplyConfiguration) WithGenerateName(value string) *DaemonSetA
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithNamespace(value string) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Namespace = &value
+	b.Namespace = &value
 	return b
 }
 
@@ -151,7 +131,7 @@ func (b *DaemonSetApplyConfiguration) WithNamespace(value string) *DaemonSetAppl
 // If called multiple times, the UID field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithUID(value types.UID) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.UID = &value
+	b.UID = &value
 	return b
 }
 
@@ -160,7 +140,7 @@ func (b *DaemonSetApplyConfiguration) WithUID(value types.UID) *DaemonSetApplyCo
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithResourceVersion(value string) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
+	b.ResourceVersion = &value
 	return b
 }
 
@@ -169,7 +149,7 @@ func (b *DaemonSetApplyConfiguration) WithResourceVersion(value string) *DaemonS
 // If called multiple times, the Generation field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithGeneration(value int64) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Generation = &value
+	b.Generation = &value
 	return b
 }
 
@@ -178,7 +158,7 @@ func (b *DaemonSetApplyConfiguration) WithGeneration(value int64) *DaemonSetAppl
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithCreationTimestamp(value metav1.Time) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
+	b.CreationTimestamp = &value
 	return b
 }
 
@@ -187,7 +167,7 @@ func (b *DaemonSetApplyConfiguration) WithCreationTimestamp(value metav1.Time) *
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
+	b.DeletionTimestamp = &value
 	return b
 }
 
@@ -196,7 +176,7 @@ func (b *DaemonSetApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
 func (b *DaemonSetApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
+	b.DeletionGracePeriodSeconds = &value
 	return b
 }
 
@@ -206,11 +186,11 @@ func (b *DaemonSetApplyConfiguration) WithDeletionGracePeriodSeconds(value int64
 // overwriting an existing map entries in Labels field with the same key.
 func (b *DaemonSetApplyConfiguration) WithLabels(entries map[string]string) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
+	if b.Labels == nil && len(entries) > 0 {
+		b.Labels = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Labels[k] = v
+		b.Labels[k] = v
 	}
 	return b
 }
@@ -221,11 +201,11 @@ func (b *DaemonSetApplyConfiguration) WithLabels(entries map[string]string) *Dae
 // overwriting an existing map entries in Annotations field with the same key.
 func (b *DaemonSetApplyConfiguration) WithAnnotations(entries map[string]string) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
+	if b.Annotations == nil && len(entries) > 0 {
+		b.Annotations = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Annotations[k] = v
+		b.Annotations[k] = v
 	}
 	return b
 }
@@ -239,7 +219,7 @@ func (b *DaemonSetApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerRef
 		if values[i] == nil {
 			panic("nil value passed to WithOwnerReferences")
 		}
-		b.ObjectMetaApplyConfiguration.OwnerReferences = append(b.ObjectMetaApplyConfiguration.OwnerReferences, *values[i])
+		b.OwnerReferences = append(b.OwnerReferences, *values[i])
 	}
 	return b
 }
@@ -250,7 +230,7 @@ func (b *DaemonSetApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerRef
 func (b *DaemonSetApplyConfiguration) WithFinalizers(values ...string) *DaemonSetApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
-		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
+		b.Finalizers = append(b.Finalizers, values[i])
 	}
 	return b
 }
@@ -277,24 +257,8 @@ func (b *DaemonSetApplyConfiguration) WithStatus(value *DaemonSetStatusApplyConf
 	return b
 }
 
-// GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *DaemonSetApplyConfiguration) GetKind() *string {
-	return b.TypeMetaApplyConfiguration.Kind
-}
-
-// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *DaemonSetApplyConfiguration) GetAPIVersion() *string {
-	return b.TypeMetaApplyConfiguration.APIVersion
-}
-
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *DaemonSetApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Name
-}
-
-// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *DaemonSetApplyConfiguration) GetNamespace() *string {
-	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Namespace
+	return b.Name
 }
