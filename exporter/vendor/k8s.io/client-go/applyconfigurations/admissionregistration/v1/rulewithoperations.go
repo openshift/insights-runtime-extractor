@@ -19,22 +19,13 @@ limitations under the License.
 package v1
 
 import (
-	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	v1 "k8s.io/api/admissionregistration/v1"
 )
 
 // RuleWithOperationsApplyConfiguration represents a declarative configuration of the RuleWithOperations type for use
 // with apply.
-//
-// RuleWithOperations is a tuple of Operations and Resources. It is recommended to make
-// sure that all the tuple expansions are valid.
 type RuleWithOperationsApplyConfiguration struct {
-	// Operations is the operations the admission hook cares about - CREATE, UPDATE, DELETE, CONNECT or *
-	// for all of those operations and any future admission operations that are added.
-	// If '*' is present, the length of the slice must be one.
-	// Required.
-	Operations []admissionregistrationv1.OperationType `json:"operations,omitempty"`
-	// Rule is embedded, it describes other criteria of the rule, like
-	// APIGroups, APIVersions, Resources, etc.
+	Operations             []v1.OperationType `json:"operations,omitempty"`
 	RuleApplyConfiguration `json:",inline"`
 }
 
@@ -47,7 +38,7 @@ func RuleWithOperations() *RuleWithOperationsApplyConfiguration {
 // WithOperations adds the given value to the Operations field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Operations field.
-func (b *RuleWithOperationsApplyConfiguration) WithOperations(values ...admissionregistrationv1.OperationType) *RuleWithOperationsApplyConfiguration {
+func (b *RuleWithOperationsApplyConfiguration) WithOperations(values ...v1.OperationType) *RuleWithOperationsApplyConfiguration {
 	for i := range values {
 		b.Operations = append(b.Operations, values[i])
 	}
@@ -59,7 +50,7 @@ func (b *RuleWithOperationsApplyConfiguration) WithOperations(values ...admissio
 // If called multiple times, values provided by each call will be appended to the APIGroups field.
 func (b *RuleWithOperationsApplyConfiguration) WithAPIGroups(values ...string) *RuleWithOperationsApplyConfiguration {
 	for i := range values {
-		b.RuleApplyConfiguration.APIGroups = append(b.RuleApplyConfiguration.APIGroups, values[i])
+		b.APIGroups = append(b.APIGroups, values[i])
 	}
 	return b
 }
@@ -69,7 +60,7 @@ func (b *RuleWithOperationsApplyConfiguration) WithAPIGroups(values ...string) *
 // If called multiple times, values provided by each call will be appended to the APIVersions field.
 func (b *RuleWithOperationsApplyConfiguration) WithAPIVersions(values ...string) *RuleWithOperationsApplyConfiguration {
 	for i := range values {
-		b.RuleApplyConfiguration.APIVersions = append(b.RuleApplyConfiguration.APIVersions, values[i])
+		b.APIVersions = append(b.APIVersions, values[i])
 	}
 	return b
 }
@@ -79,7 +70,7 @@ func (b *RuleWithOperationsApplyConfiguration) WithAPIVersions(values ...string)
 // If called multiple times, values provided by each call will be appended to the Resources field.
 func (b *RuleWithOperationsApplyConfiguration) WithResources(values ...string) *RuleWithOperationsApplyConfiguration {
 	for i := range values {
-		b.RuleApplyConfiguration.Resources = append(b.RuleApplyConfiguration.Resources, values[i])
+		b.Resources = append(b.Resources, values[i])
 	}
 	return b
 }
@@ -87,7 +78,7 @@ func (b *RuleWithOperationsApplyConfiguration) WithResources(values ...string) *
 // WithScope sets the Scope field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Scope field is set to the value of the last call.
-func (b *RuleWithOperationsApplyConfiguration) WithScope(value admissionregistrationv1.ScopeType) *RuleWithOperationsApplyConfiguration {
-	b.RuleApplyConfiguration.Scope = &value
+func (b *RuleWithOperationsApplyConfiguration) WithScope(value v1.ScopeType) *RuleWithOperationsApplyConfiguration {
+	b.Scope = &value
 	return b
 }

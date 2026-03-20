@@ -94,7 +94,7 @@ func sizeMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo, opts marshalO
 		return 0
 	}
 	n := 0
-	iter := mapv.MapRange()
+	iter := mapRange(mapv)
 	for iter.Next() {
 		key := mapi.conv.keyConv.PBValueOf(iter.Key()).MapKey()
 		keySize := mapi.keyFuncs.size(key.Value(), mapKeyTagSize, opts)
@@ -113,9 +113,6 @@ func sizeMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo, opts marshalO
 }
 
 func consumeMap(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo, f *coderFieldInfo, opts unmarshalOptions) (out unmarshalOutput, err error) {
-	if opts.depth--; opts.depth < 0 {
-		return out, errRecursionDepth
-	}
 	if wtyp != protowire.BytesType {
 		return out, errUnknown
 	}
@@ -173,9 +170,6 @@ func consumeMap(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo
 }
 
 func consumeMapOfMessage(b []byte, mapv reflect.Value, wtyp protowire.Type, mapi *mapInfo, f *coderFieldInfo, opts unmarshalOptions) (out unmarshalOutput, err error) {
-	if opts.depth--; opts.depth < 0 {
-		return out, errRecursionDepth
-	}
 	if wtyp != protowire.BytesType {
 		return out, errUnknown
 	}
@@ -287,7 +281,7 @@ func appendMap(b []byte, mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo, o
 	if opts.Deterministic() {
 		return appendMapDeterministic(b, mapv, mapi, f, opts)
 	}
-	iter := mapv.MapRange()
+	iter := mapRange(mapv)
 	for iter.Next() {
 		var err error
 		b = protowire.AppendVarint(b, f.wiretag)
@@ -334,7 +328,7 @@ func isInitMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo) error {
 		if !mi.needsInitCheck {
 			return nil
 		}
-		iter := mapv.MapRange()
+		iter := mapRange(mapv)
 		for iter.Next() {
 			val := pointerOfValue(iter.Value())
 			if err := mi.checkInitializedPointer(val); err != nil {
@@ -342,7 +336,7 @@ func isInitMap(mapv reflect.Value, mapi *mapInfo, f *coderFieldInfo) error {
 			}
 		}
 	} else {
-		iter := mapv.MapRange()
+		iter := mapRange(mapv)
 		for iter.Next() {
 			val := mapi.conv.valConv.PBValueOf(iter.Value())
 			if err := mapi.valFuncs.isInit(val); err != nil {
@@ -362,7 +356,7 @@ func mergeMap(dst, src pointer, f *coderFieldInfo, opts mergeOptions) {
 	if dstm.IsNil() {
 		dstm.Set(reflect.MakeMap(f.ft))
 	}
-	iter := srcm.MapRange()
+	iter := mapRange(srcm)
 	for iter.Next() {
 		dstm.SetMapIndex(iter.Key(), iter.Value())
 	}
@@ -377,7 +371,7 @@ func mergeMapOfBytes(dst, src pointer, f *coderFieldInfo, opts mergeOptions) {
 	if dstm.IsNil() {
 		dstm.Set(reflect.MakeMap(f.ft))
 	}
-	iter := srcm.MapRange()
+	iter := mapRange(srcm)
 	for iter.Next() {
 		dstm.SetMapIndex(iter.Key(), reflect.ValueOf(append(emptyBuf[:], iter.Value().Bytes()...)))
 	}
@@ -392,7 +386,7 @@ func mergeMapOfMessage(dst, src pointer, f *coderFieldInfo, opts mergeOptions) {
 	if dstm.IsNil() {
 		dstm.Set(reflect.MakeMap(f.ft))
 	}
-	iter := srcm.MapRange()
+	iter := mapRange(srcm)
 	for iter.Next() {
 		val := reflect.New(f.ft.Elem().Elem())
 		if f.mi != nil {

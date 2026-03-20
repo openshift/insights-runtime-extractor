@@ -29,20 +29,11 @@ import (
 
 // FlowSchemaApplyConfiguration represents a declarative configuration of the FlowSchema type for use
 // with apply.
-//
-// FlowSchema defines the schema of a group of flows. Note that a flow is made up of a set of inbound API requests with
-// similar attributes and is identified by a pair of strings: the name of the FlowSchema and a "flow distinguisher".
 type FlowSchemaApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	// `metadata` is the standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	// `spec` is the specification of the desired behavior of a FlowSchema.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Spec *FlowSchemaSpecApplyConfiguration `json:"spec,omitempty"`
-	// `status` is the current status of a FlowSchema.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Status *FlowSchemaStatusApplyConfiguration `json:"status,omitempty"`
+	Spec                             *FlowSchemaSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *FlowSchemaStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // FlowSchema constructs a declarative configuration of the FlowSchema type for use with
@@ -55,14 +46,29 @@ func FlowSchema(name string) *FlowSchemaApplyConfiguration {
 	return b
 }
 
-// ExtractFlowSchemaFrom extracts the applied configuration owned by fieldManager from
-// flowSchema for the specified subresource. Pass an empty string for subresource to extract
-// the main resource. Common subresources include "status", "scale", etc.
+// ExtractFlowSchema extracts the applied configuration owned by fieldManager from
+// flowSchema. If no managedFields are found in flowSchema for fieldManager, a
+// FlowSchemaApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
 // flowSchema must be a unmodified FlowSchema API object that was retrieved from the Kubernetes API.
-// ExtractFlowSchemaFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// ExtractFlowSchema provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractFlowSchemaFrom(flowSchema *flowcontrolv1beta2.FlowSchema, fieldManager string, subresource string) (*FlowSchemaApplyConfiguration, error) {
+// Experimental!
+func ExtractFlowSchema(flowSchema *flowcontrolv1beta2.FlowSchema, fieldManager string) (*FlowSchemaApplyConfiguration, error) {
+	return extractFlowSchema(flowSchema, fieldManager, "")
+}
+
+// ExtractFlowSchemaStatus is the same as ExtractFlowSchema except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractFlowSchemaStatus(flowSchema *flowcontrolv1beta2.FlowSchema, fieldManager string) (*FlowSchemaApplyConfiguration, error) {
+	return extractFlowSchema(flowSchema, fieldManager, "status")
+}
+
+func extractFlowSchema(flowSchema *flowcontrolv1beta2.FlowSchema, fieldManager string, subresource string) (*FlowSchemaApplyConfiguration, error) {
 	b := &FlowSchemaApplyConfiguration{}
 	err := managedfields.ExtractInto(flowSchema, internal.Parser().Type("io.k8s.api.flowcontrol.v1beta2.FlowSchema"), fieldManager, b, subresource)
 	if err != nil {
@@ -75,33 +81,11 @@ func ExtractFlowSchemaFrom(flowSchema *flowcontrolv1beta2.FlowSchema, fieldManag
 	return b, nil
 }
 
-// ExtractFlowSchema extracts the applied configuration owned by fieldManager from
-// flowSchema. If no managedFields are found in flowSchema for fieldManager, a
-// FlowSchemaApplyConfiguration is returned with only the Name, Namespace (if applicable),
-// APIVersion and Kind populated. It is possible that no managed fields were found for because other
-// field managers have taken ownership of all the fields previously owned by fieldManager, or because
-// the fieldManager never owned fields any fields.
-// flowSchema must be a unmodified FlowSchema API object that was retrieved from the Kubernetes API.
-// ExtractFlowSchema provides a way to perform a extract/modify-in-place/apply workflow.
-// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
-// applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractFlowSchema(flowSchema *flowcontrolv1beta2.FlowSchema, fieldManager string) (*FlowSchemaApplyConfiguration, error) {
-	return ExtractFlowSchemaFrom(flowSchema, fieldManager, "")
-}
-
-// ExtractFlowSchemaStatus extracts the applied configuration owned by fieldManager from
-// flowSchema for the status subresource.
-func ExtractFlowSchemaStatus(flowSchema *flowcontrolv1beta2.FlowSchema, fieldManager string) (*FlowSchemaApplyConfiguration, error) {
-	return ExtractFlowSchemaFrom(flowSchema, fieldManager, "status")
-}
-
-func (b FlowSchemaApplyConfiguration) IsApplyConfiguration() {}
-
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithKind(value string) *FlowSchemaApplyConfiguration {
-	b.TypeMetaApplyConfiguration.Kind = &value
+	b.Kind = &value
 	return b
 }
 
@@ -109,7 +93,7 @@ func (b *FlowSchemaApplyConfiguration) WithKind(value string) *FlowSchemaApplyCo
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithAPIVersion(value string) *FlowSchemaApplyConfiguration {
-	b.TypeMetaApplyConfiguration.APIVersion = &value
+	b.APIVersion = &value
 	return b
 }
 
@@ -118,7 +102,7 @@ func (b *FlowSchemaApplyConfiguration) WithAPIVersion(value string) *FlowSchemaA
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithName(value string) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Name = &value
+	b.Name = &value
 	return b
 }
 
@@ -127,7 +111,7 @@ func (b *FlowSchemaApplyConfiguration) WithName(value string) *FlowSchemaApplyCo
 // If called multiple times, the GenerateName field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithGenerateName(value string) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.GenerateName = &value
+	b.GenerateName = &value
 	return b
 }
 
@@ -136,7 +120,7 @@ func (b *FlowSchemaApplyConfiguration) WithGenerateName(value string) *FlowSchem
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithNamespace(value string) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Namespace = &value
+	b.Namespace = &value
 	return b
 }
 
@@ -145,7 +129,7 @@ func (b *FlowSchemaApplyConfiguration) WithNamespace(value string) *FlowSchemaAp
 // If called multiple times, the UID field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithUID(value types.UID) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.UID = &value
+	b.UID = &value
 	return b
 }
 
@@ -154,7 +138,7 @@ func (b *FlowSchemaApplyConfiguration) WithUID(value types.UID) *FlowSchemaApply
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithResourceVersion(value string) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
+	b.ResourceVersion = &value
 	return b
 }
 
@@ -163,7 +147,7 @@ func (b *FlowSchemaApplyConfiguration) WithResourceVersion(value string) *FlowSc
 // If called multiple times, the Generation field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithGeneration(value int64) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Generation = &value
+	b.Generation = &value
 	return b
 }
 
@@ -172,7 +156,7 @@ func (b *FlowSchemaApplyConfiguration) WithGeneration(value int64) *FlowSchemaAp
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithCreationTimestamp(value metav1.Time) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
+	b.CreationTimestamp = &value
 	return b
 }
 
@@ -181,7 +165,7 @@ func (b *FlowSchemaApplyConfiguration) WithCreationTimestamp(value metav1.Time) 
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
+	b.DeletionTimestamp = &value
 	return b
 }
 
@@ -190,7 +174,7 @@ func (b *FlowSchemaApplyConfiguration) WithDeletionTimestamp(value metav1.Time) 
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
 func (b *FlowSchemaApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
+	b.DeletionGracePeriodSeconds = &value
 	return b
 }
 
@@ -200,11 +184,11 @@ func (b *FlowSchemaApplyConfiguration) WithDeletionGracePeriodSeconds(value int6
 // overwriting an existing map entries in Labels field with the same key.
 func (b *FlowSchemaApplyConfiguration) WithLabels(entries map[string]string) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
+	if b.Labels == nil && len(entries) > 0 {
+		b.Labels = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Labels[k] = v
+		b.Labels[k] = v
 	}
 	return b
 }
@@ -215,11 +199,11 @@ func (b *FlowSchemaApplyConfiguration) WithLabels(entries map[string]string) *Fl
 // overwriting an existing map entries in Annotations field with the same key.
 func (b *FlowSchemaApplyConfiguration) WithAnnotations(entries map[string]string) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
+	if b.Annotations == nil && len(entries) > 0 {
+		b.Annotations = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Annotations[k] = v
+		b.Annotations[k] = v
 	}
 	return b
 }
@@ -233,7 +217,7 @@ func (b *FlowSchemaApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerRe
 		if values[i] == nil {
 			panic("nil value passed to WithOwnerReferences")
 		}
-		b.ObjectMetaApplyConfiguration.OwnerReferences = append(b.ObjectMetaApplyConfiguration.OwnerReferences, *values[i])
+		b.OwnerReferences = append(b.OwnerReferences, *values[i])
 	}
 	return b
 }
@@ -244,7 +228,7 @@ func (b *FlowSchemaApplyConfiguration) WithOwnerReferences(values ...*v1.OwnerRe
 func (b *FlowSchemaApplyConfiguration) WithFinalizers(values ...string) *FlowSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
-		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
+		b.Finalizers = append(b.Finalizers, values[i])
 	}
 	return b
 }
@@ -271,24 +255,8 @@ func (b *FlowSchemaApplyConfiguration) WithStatus(value *FlowSchemaStatusApplyCo
 	return b
 }
 
-// GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *FlowSchemaApplyConfiguration) GetKind() *string {
-	return b.TypeMetaApplyConfiguration.Kind
-}
-
-// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *FlowSchemaApplyConfiguration) GetAPIVersion() *string {
-	return b.TypeMetaApplyConfiguration.APIVersion
-}
-
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *FlowSchemaApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Name
-}
-
-// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *FlowSchemaApplyConfiguration) GetNamespace() *string {
-	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Namespace
+	return b.Name
 }

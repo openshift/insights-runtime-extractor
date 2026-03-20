@@ -20,15 +20,10 @@ package v1
 
 // SecretKeySelectorApplyConfiguration represents a declarative configuration of the SecretKeySelector type for use
 // with apply.
-//
-// SecretKeySelector selects a key of a Secret.
 type SecretKeySelectorApplyConfiguration struct {
-	// The name of the secret in the pod's namespace to select from.
 	LocalObjectReferenceApplyConfiguration `json:",inline"`
-	// The key of the secret to select from.  Must be a valid secret key.
-	Key *string `json:"key,omitempty"`
-	// Specify whether the Secret or its key must be defined
-	Optional *bool `json:"optional,omitempty"`
+	Key                                    *string `json:"key,omitempty"`
+	Optional                               *bool   `json:"optional,omitempty"`
 }
 
 // SecretKeySelectorApplyConfiguration constructs a declarative configuration of the SecretKeySelector type for use with
@@ -41,7 +36,7 @@ func SecretKeySelector() *SecretKeySelectorApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *SecretKeySelectorApplyConfiguration) WithName(value string) *SecretKeySelectorApplyConfiguration {
-	b.LocalObjectReferenceApplyConfiguration.Name = &value
+	b.Name = &value
 	return b
 }
 

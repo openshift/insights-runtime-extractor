@@ -20,17 +20,9 @@ package v1
 
 // SecretEnvSourceApplyConfiguration represents a declarative configuration of the SecretEnvSource type for use
 // with apply.
-//
-// SecretEnvSource selects a Secret to populate the environment
-// variables with.
-//
-// The contents of the target Secret's Data field will represent the
-// key-value pairs as environment variables.
 type SecretEnvSourceApplyConfiguration struct {
-	// The Secret to select from.
 	LocalObjectReferenceApplyConfiguration `json:",inline"`
-	// Specify whether the Secret must be defined
-	Optional *bool `json:"optional,omitempty"`
+	Optional                               *bool `json:"optional,omitempty"`
 }
 
 // SecretEnvSourceApplyConfiguration constructs a declarative configuration of the SecretEnvSource type for use with
@@ -43,7 +35,7 @@ func SecretEnvSource() *SecretEnvSourceApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *SecretEnvSourceApplyConfiguration) WithName(value string) *SecretEnvSourceApplyConfiguration {
-	b.LocalObjectReferenceApplyConfiguration.Name = &value
+	b.Name = &value
 	return b
 }
 

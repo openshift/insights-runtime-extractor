@@ -19,18 +19,14 @@ limitations under the License.
 package v1
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // NodeAddressApplyConfiguration represents a declarative configuration of the NodeAddress type for use
 // with apply.
-//
-// NodeAddress contains information for the node's address.
 type NodeAddressApplyConfiguration struct {
-	// Node address type, one of Hostname, ExternalIP or InternalIP.
-	Type *corev1.NodeAddressType `json:"type,omitempty"`
-	// The node address.
-	Address *string `json:"address,omitempty"`
+	Type    *v1.NodeAddressType `json:"type,omitempty"`
+	Address *string             `json:"address,omitempty"`
 }
 
 // NodeAddressApplyConfiguration constructs a declarative configuration of the NodeAddress type for use with
@@ -42,7 +38,7 @@ func NodeAddress() *NodeAddressApplyConfiguration {
 // WithType sets the Type field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Type field is set to the value of the last call.
-func (b *NodeAddressApplyConfiguration) WithType(value corev1.NodeAddressType) *NodeAddressApplyConfiguration {
+func (b *NodeAddressApplyConfiguration) WithType(value v1.NodeAddressType) *NodeAddressApplyConfiguration {
 	b.Type = &value
 	return b
 }
