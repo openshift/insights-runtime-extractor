@@ -29,19 +29,11 @@ import (
 
 // PriorityLevelConfigurationApplyConfiguration represents a declarative configuration of the PriorityLevelConfiguration type for use
 // with apply.
-//
-// PriorityLevelConfiguration represents the configuration of a priority level.
 type PriorityLevelConfigurationApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	// `metadata` is the standard object's metadata.
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	// `spec` is the specification of the desired behavior of a "request-priority".
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Spec *PriorityLevelConfigurationSpecApplyConfiguration `json:"spec,omitempty"`
-	// `status` is the current status of a "request-priority".
-	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
-	Status *PriorityLevelConfigurationStatusApplyConfiguration `json:"status,omitempty"`
+	Spec                             *PriorityLevelConfigurationSpecApplyConfiguration   `json:"spec,omitempty"`
+	Status                           *PriorityLevelConfigurationStatusApplyConfiguration `json:"status,omitempty"`
 }
 
 // PriorityLevelConfiguration constructs a declarative configuration of the PriorityLevelConfiguration type for use with
@@ -54,14 +46,29 @@ func PriorityLevelConfiguration(name string) *PriorityLevelConfigurationApplyCon
 	return b
 }
 
-// ExtractPriorityLevelConfigurationFrom extracts the applied configuration owned by fieldManager from
-// priorityLevelConfiguration for the specified subresource. Pass an empty string for subresource to extract
-// the main resource. Common subresources include "status", "scale", etc.
+// ExtractPriorityLevelConfiguration extracts the applied configuration owned by fieldManager from
+// priorityLevelConfiguration. If no managedFields are found in priorityLevelConfiguration for fieldManager, a
+// PriorityLevelConfigurationApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
 // priorityLevelConfiguration must be a unmodified PriorityLevelConfiguration API object that was retrieved from the Kubernetes API.
-// ExtractPriorityLevelConfigurationFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// ExtractPriorityLevelConfiguration provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractPriorityLevelConfigurationFrom(priorityLevelConfiguration *flowcontrolv1beta1.PriorityLevelConfiguration, fieldManager string, subresource string) (*PriorityLevelConfigurationApplyConfiguration, error) {
+// Experimental!
+func ExtractPriorityLevelConfiguration(priorityLevelConfiguration *flowcontrolv1beta1.PriorityLevelConfiguration, fieldManager string) (*PriorityLevelConfigurationApplyConfiguration, error) {
+	return extractPriorityLevelConfiguration(priorityLevelConfiguration, fieldManager, "")
+}
+
+// ExtractPriorityLevelConfigurationStatus is the same as ExtractPriorityLevelConfiguration except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractPriorityLevelConfigurationStatus(priorityLevelConfiguration *flowcontrolv1beta1.PriorityLevelConfiguration, fieldManager string) (*PriorityLevelConfigurationApplyConfiguration, error) {
+	return extractPriorityLevelConfiguration(priorityLevelConfiguration, fieldManager, "status")
+}
+
+func extractPriorityLevelConfiguration(priorityLevelConfiguration *flowcontrolv1beta1.PriorityLevelConfiguration, fieldManager string, subresource string) (*PriorityLevelConfigurationApplyConfiguration, error) {
 	b := &PriorityLevelConfigurationApplyConfiguration{}
 	err := managedfields.ExtractInto(priorityLevelConfiguration, internal.Parser().Type("io.k8s.api.flowcontrol.v1beta1.PriorityLevelConfiguration"), fieldManager, b, subresource)
 	if err != nil {
@@ -74,33 +81,11 @@ func ExtractPriorityLevelConfigurationFrom(priorityLevelConfiguration *flowcontr
 	return b, nil
 }
 
-// ExtractPriorityLevelConfiguration extracts the applied configuration owned by fieldManager from
-// priorityLevelConfiguration. If no managedFields are found in priorityLevelConfiguration for fieldManager, a
-// PriorityLevelConfigurationApplyConfiguration is returned with only the Name, Namespace (if applicable),
-// APIVersion and Kind populated. It is possible that no managed fields were found for because other
-// field managers have taken ownership of all the fields previously owned by fieldManager, or because
-// the fieldManager never owned fields any fields.
-// priorityLevelConfiguration must be a unmodified PriorityLevelConfiguration API object that was retrieved from the Kubernetes API.
-// ExtractPriorityLevelConfiguration provides a way to perform a extract/modify-in-place/apply workflow.
-// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
-// applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractPriorityLevelConfiguration(priorityLevelConfiguration *flowcontrolv1beta1.PriorityLevelConfiguration, fieldManager string) (*PriorityLevelConfigurationApplyConfiguration, error) {
-	return ExtractPriorityLevelConfigurationFrom(priorityLevelConfiguration, fieldManager, "")
-}
-
-// ExtractPriorityLevelConfigurationStatus extracts the applied configuration owned by fieldManager from
-// priorityLevelConfiguration for the status subresource.
-func ExtractPriorityLevelConfigurationStatus(priorityLevelConfiguration *flowcontrolv1beta1.PriorityLevelConfiguration, fieldManager string) (*PriorityLevelConfigurationApplyConfiguration, error) {
-	return ExtractPriorityLevelConfigurationFrom(priorityLevelConfiguration, fieldManager, "status")
-}
-
-func (b PriorityLevelConfigurationApplyConfiguration) IsApplyConfiguration() {}
-
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithKind(value string) *PriorityLevelConfigurationApplyConfiguration {
-	b.TypeMetaApplyConfiguration.Kind = &value
+	b.Kind = &value
 	return b
 }
 
@@ -108,7 +93,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithKind(value string) *P
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithAPIVersion(value string) *PriorityLevelConfigurationApplyConfiguration {
-	b.TypeMetaApplyConfiguration.APIVersion = &value
+	b.APIVersion = &value
 	return b
 }
 
@@ -117,7 +102,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithAPIVersion(value stri
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithName(value string) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Name = &value
+	b.Name = &value
 	return b
 }
 
@@ -126,7 +111,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithName(value string) *P
 // If called multiple times, the GenerateName field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithGenerateName(value string) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.GenerateName = &value
+	b.GenerateName = &value
 	return b
 }
 
@@ -135,7 +120,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithGenerateName(value st
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithNamespace(value string) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Namespace = &value
+	b.Namespace = &value
 	return b
 }
 
@@ -144,7 +129,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithNamespace(value strin
 // If called multiple times, the UID field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithUID(value types.UID) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.UID = &value
+	b.UID = &value
 	return b
 }
 
@@ -153,7 +138,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithUID(value types.UID) 
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithResourceVersion(value string) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
+	b.ResourceVersion = &value
 	return b
 }
 
@@ -162,7 +147,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithResourceVersion(value
 // If called multiple times, the Generation field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithGeneration(value int64) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Generation = &value
+	b.Generation = &value
 	return b
 }
 
@@ -171,7 +156,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithGeneration(value int6
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithCreationTimestamp(value metav1.Time) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
+	b.CreationTimestamp = &value
 	return b
 }
 
@@ -180,7 +165,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithCreationTimestamp(val
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
+	b.DeletionTimestamp = &value
 	return b
 }
 
@@ -189,7 +174,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithDeletionTimestamp(val
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
+	b.DeletionGracePeriodSeconds = &value
 	return b
 }
 
@@ -199,11 +184,11 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithDeletionGracePeriodSe
 // overwriting an existing map entries in Labels field with the same key.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithLabels(entries map[string]string) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
+	if b.Labels == nil && len(entries) > 0 {
+		b.Labels = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Labels[k] = v
+		b.Labels[k] = v
 	}
 	return b
 }
@@ -214,11 +199,11 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithLabels(entries map[st
 // overwriting an existing map entries in Annotations field with the same key.
 func (b *PriorityLevelConfigurationApplyConfiguration) WithAnnotations(entries map[string]string) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
+	if b.Annotations == nil && len(entries) > 0 {
+		b.Annotations = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Annotations[k] = v
+		b.Annotations[k] = v
 	}
 	return b
 }
@@ -232,7 +217,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithOwnerReferences(value
 		if values[i] == nil {
 			panic("nil value passed to WithOwnerReferences")
 		}
-		b.ObjectMetaApplyConfiguration.OwnerReferences = append(b.ObjectMetaApplyConfiguration.OwnerReferences, *values[i])
+		b.OwnerReferences = append(b.OwnerReferences, *values[i])
 	}
 	return b
 }
@@ -243,7 +228,7 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithOwnerReferences(value
 func (b *PriorityLevelConfigurationApplyConfiguration) WithFinalizers(values ...string) *PriorityLevelConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
-		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
+		b.Finalizers = append(b.Finalizers, values[i])
 	}
 	return b
 }
@@ -270,24 +255,8 @@ func (b *PriorityLevelConfigurationApplyConfiguration) WithStatus(value *Priorit
 	return b
 }
 
-// GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *PriorityLevelConfigurationApplyConfiguration) GetKind() *string {
-	return b.TypeMetaApplyConfiguration.Kind
-}
-
-// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *PriorityLevelConfigurationApplyConfiguration) GetAPIVersion() *string {
-	return b.TypeMetaApplyConfiguration.APIVersion
-}
-
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *PriorityLevelConfigurationApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Name
-}
-
-// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *PriorityLevelConfigurationApplyConfiguration) GetNamespace() *string {
-	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Namespace
+	return b.Name
 }

@@ -18,12 +18,9 @@ package metrics
 
 import (
 	"context"
-	"sync"
 
 	"github.com/blang/semver/v4"
 	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel/trace"
-
 	dto "github.com/prometheus/client_model/go"
 )
 
@@ -38,12 +35,6 @@ type Counter struct {
 
 // The implementation of the Metric interface is expected by testutil.GetCounterMetricValue.
 var _ Metric = &Counter{}
-
-// exemplarCounterMetric holds a context to extract exemplar labels from, and a counter metric to attach them to. It implements the metricWithExemplar interface.
-type exemplarCounterMetric struct {
-	ctx      context.Context
-	delegate CounterMetric
-}
 
 // NewCounter returns an object which satisfies the kubeCollector and CounterMetric interfaces.
 // However, the object returned will not measure anything unless the collector is first
@@ -102,31 +93,9 @@ func (c *Counter) initializeDeprecatedMetric() {
 	c.initializeMetric()
 }
 
-// WithContext allows the normal Counter metric to pass in context.
+// WithContext allows the normal Counter metric to pass in context. The context is no-op now.
 func (c *Counter) WithContext(ctx context.Context) CounterMetric {
-	return &exemplarCounterMetric{ctx: ctx, delegate: c.CounterMetric}
-}
-
-// Add attaches an exemplar to the metric and then calls the delegate.
-func (e *exemplarCounterMetric) Add(v float64) {
-	if m, ok := e.delegate.(prometheus.ExemplarAdder); ok {
-		maybeSpanCtx := trace.SpanContextFromContext(e.ctx)
-		if maybeSpanCtx.IsValid() && maybeSpanCtx.IsSampled() {
-			exemplarLabels := prometheus.Labels{
-				"trace_id": maybeSpanCtx.TraceID().String(),
-				"span_id":  maybeSpanCtx.SpanID().String(),
-			}
-			m.AddWithExemplar(v, exemplarLabels)
-			return
-		}
-	}
-
-	e.delegate.Add(v)
-}
-
-// Inc attaches an exemplar to the metric and then calls the delegate.
-func (e *exemplarCounterMetric) Inc() {
-	e.Add(1)
+	return c.CounterMetric
 }
 
 // CounterVec is the internal representation of our wrapping struct around prometheus
@@ -150,6 +119,11 @@ func NewCounterVec(opts *CounterOpts, labels []string) *CounterVec {
 	opts.StabilityLevel.setDefaults()
 
 	fqName := BuildFQName(opts.Namespace, opts.Subsystem, opts.Name)
+	allowListLock.RLock()
+	if allowList, ok := labelValueAllowLists[fqName]; ok {
+		opts.LabelValueAllowLists = allowList
+	}
+	allowListLock.RUnlock()
 
 	cv := &CounterVec{
 		CounterVec:     noopCounterVec,
@@ -200,21 +174,9 @@ func (v *CounterVec) WithLabelValues(lvs ...string) CounterMetric {
 	if !v.IsCreated() {
 		return noop // return no-op counter
 	}
-
-	// Initialize label allow lists if not already initialized
-	v.initializeLabelAllowListsOnce.Do(func() {
-		allowListLock.RLock()
-		if allowList, ok := labelValueAllowLists[v.FQName()]; ok {
-			v.LabelValueAllowLists = allowList
-		}
-		allowListLock.RUnlock()
-	})
-
-	// Constrain label values to allowed values
 	if v.LabelValueAllowLists != nil {
 		v.LabelValueAllowLists.ConstrainToAllowedList(v.originalLabels, lvs)
 	}
-
 	return v.CounterVec.WithLabelValues(lvs...)
 }
 
@@ -226,19 +188,9 @@ func (v *CounterVec) With(labels map[string]string) CounterMetric {
 	if !v.IsCreated() {
 		return noop // return no-op counter
 	}
-
-	v.initializeLabelAllowListsOnce.Do(func() {
-		allowListLock.RLock()
-		if allowList, ok := labelValueAllowLists[v.FQName()]; ok {
-			v.LabelValueAllowLists = allowList
-		}
-		allowListLock.RUnlock()
-	})
-
 	if v.LabelValueAllowLists != nil {
 		v.LabelValueAllowLists.ConstrainLabelMap(labels)
 	}
-
 	return v.CounterVec.With(labels)
 }
 
@@ -263,13 +215,6 @@ func (v *CounterVec) Reset() {
 	}
 
 	v.CounterVec.Reset()
-}
-
-// ResetLabelAllowLists resets the label allow list for the CounterVec.
-// NOTE: This should only be used in test.
-func (v *CounterVec) ResetLabelAllowLists() {
-	v.initializeLabelAllowListsOnce = sync.Once{}
-	v.LabelValueAllowLists = nil
 }
 
 // WithContext returns wrapped CounterVec with context

@@ -18,7 +18,6 @@ package helm
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -238,7 +237,7 @@ func (m *Manager) run(opts *Opts) (err error) {
 	}
 	log.V(4).InfoS("Determining if helm binary is available or not", "executable", m.path)
 	if m.e.Prog().Avail(m.path) == "" {
-		err = errors.New(missingHelm)
+		err = fmt.Errorf(missingHelm)
 		return
 	}
 	command, err := m.getCommand(opts)

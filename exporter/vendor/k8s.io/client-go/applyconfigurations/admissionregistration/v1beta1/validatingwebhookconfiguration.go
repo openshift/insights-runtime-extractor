@@ -29,15 +29,10 @@ import (
 
 // ValidatingWebhookConfigurationApplyConfiguration represents a declarative configuration of the ValidatingWebhookConfiguration type for use
 // with apply.
-//
-// ValidatingWebhookConfiguration describes the configuration of and admission webhook that accept or reject and object without changing it.
-// Deprecated in v1.16, planned for removal in v1.19. Use admissionregistration.k8s.io/v1 ValidatingWebhookConfiguration instead.
 type ValidatingWebhookConfigurationApplyConfiguration struct {
-	v1.TypeMetaApplyConfiguration `json:",inline"`
-	// Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata.
+	v1.TypeMetaApplyConfiguration    `json:",inline"`
 	*v1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
-	// Webhooks is a list of webhooks and the affected resources and operations.
-	Webhooks []ValidatingWebhookApplyConfiguration `json:"webhooks,omitempty"`
+	Webhooks                         []ValidatingWebhookApplyConfiguration `json:"webhooks,omitempty"`
 }
 
 // ValidatingWebhookConfiguration constructs a declarative configuration of the ValidatingWebhookConfiguration type for use with
@@ -50,14 +45,29 @@ func ValidatingWebhookConfiguration(name string) *ValidatingWebhookConfiguration
 	return b
 }
 
-// ExtractValidatingWebhookConfigurationFrom extracts the applied configuration owned by fieldManager from
-// validatingWebhookConfiguration for the specified subresource. Pass an empty string for subresource to extract
-// the main resource. Common subresources include "status", "scale", etc.
+// ExtractValidatingWebhookConfiguration extracts the applied configuration owned by fieldManager from
+// validatingWebhookConfiguration. If no managedFields are found in validatingWebhookConfiguration for fieldManager, a
+// ValidatingWebhookConfigurationApplyConfiguration is returned with only the Name, Namespace (if applicable),
+// APIVersion and Kind populated. It is possible that no managed fields were found for because other
+// field managers have taken ownership of all the fields previously owned by fieldManager, or because
+// the fieldManager never owned fields any fields.
 // validatingWebhookConfiguration must be a unmodified ValidatingWebhookConfiguration API object that was retrieved from the Kubernetes API.
-// ExtractValidatingWebhookConfigurationFrom provides a way to perform a extract/modify-in-place/apply workflow.
+// ExtractValidatingWebhookConfiguration provides a way to perform a extract/modify-in-place/apply workflow.
 // Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
 // applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractValidatingWebhookConfigurationFrom(validatingWebhookConfiguration *admissionregistrationv1beta1.ValidatingWebhookConfiguration, fieldManager string, subresource string) (*ValidatingWebhookConfigurationApplyConfiguration, error) {
+// Experimental!
+func ExtractValidatingWebhookConfiguration(validatingWebhookConfiguration *admissionregistrationv1beta1.ValidatingWebhookConfiguration, fieldManager string) (*ValidatingWebhookConfigurationApplyConfiguration, error) {
+	return extractValidatingWebhookConfiguration(validatingWebhookConfiguration, fieldManager, "")
+}
+
+// ExtractValidatingWebhookConfigurationStatus is the same as ExtractValidatingWebhookConfiguration except
+// that it extracts the status subresource applied configuration.
+// Experimental!
+func ExtractValidatingWebhookConfigurationStatus(validatingWebhookConfiguration *admissionregistrationv1beta1.ValidatingWebhookConfiguration, fieldManager string) (*ValidatingWebhookConfigurationApplyConfiguration, error) {
+	return extractValidatingWebhookConfiguration(validatingWebhookConfiguration, fieldManager, "status")
+}
+
+func extractValidatingWebhookConfiguration(validatingWebhookConfiguration *admissionregistrationv1beta1.ValidatingWebhookConfiguration, fieldManager string, subresource string) (*ValidatingWebhookConfigurationApplyConfiguration, error) {
 	b := &ValidatingWebhookConfigurationApplyConfiguration{}
 	err := managedfields.ExtractInto(validatingWebhookConfiguration, internal.Parser().Type("io.k8s.api.admissionregistration.v1beta1.ValidatingWebhookConfiguration"), fieldManager, b, subresource)
 	if err != nil {
@@ -70,27 +80,11 @@ func ExtractValidatingWebhookConfigurationFrom(validatingWebhookConfiguration *a
 	return b, nil
 }
 
-// ExtractValidatingWebhookConfiguration extracts the applied configuration owned by fieldManager from
-// validatingWebhookConfiguration. If no managedFields are found in validatingWebhookConfiguration for fieldManager, a
-// ValidatingWebhookConfigurationApplyConfiguration is returned with only the Name, Namespace (if applicable),
-// APIVersion and Kind populated. It is possible that no managed fields were found for because other
-// field managers have taken ownership of all the fields previously owned by fieldManager, or because
-// the fieldManager never owned fields any fields.
-// validatingWebhookConfiguration must be a unmodified ValidatingWebhookConfiguration API object that was retrieved from the Kubernetes API.
-// ExtractValidatingWebhookConfiguration provides a way to perform a extract/modify-in-place/apply workflow.
-// Note that an extracted apply configuration will contain fewer fields than what the fieldManager previously
-// applied if another fieldManager has updated or force applied any of the previously applied fields.
-func ExtractValidatingWebhookConfiguration(validatingWebhookConfiguration *admissionregistrationv1beta1.ValidatingWebhookConfiguration, fieldManager string) (*ValidatingWebhookConfigurationApplyConfiguration, error) {
-	return ExtractValidatingWebhookConfigurationFrom(validatingWebhookConfiguration, fieldManager, "")
-}
-
-func (b ValidatingWebhookConfigurationApplyConfiguration) IsApplyConfiguration() {}
-
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithKind(value string) *ValidatingWebhookConfigurationApplyConfiguration {
-	b.TypeMetaApplyConfiguration.Kind = &value
+	b.Kind = &value
 	return b
 }
 
@@ -98,7 +92,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithKind(value string
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithAPIVersion(value string) *ValidatingWebhookConfigurationApplyConfiguration {
-	b.TypeMetaApplyConfiguration.APIVersion = &value
+	b.APIVersion = &value
 	return b
 }
 
@@ -107,7 +101,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithAPIVersion(value 
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithName(value string) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Name = &value
+	b.Name = &value
 	return b
 }
 
@@ -116,7 +110,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithName(value string
 // If called multiple times, the GenerateName field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithGenerateName(value string) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.GenerateName = &value
+	b.GenerateName = &value
 	return b
 }
 
@@ -125,7 +119,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithGenerateName(valu
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithNamespace(value string) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Namespace = &value
+	b.Namespace = &value
 	return b
 }
 
@@ -134,7 +128,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithNamespace(value s
 // If called multiple times, the UID field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithUID(value types.UID) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.UID = &value
+	b.UID = &value
 	return b
 }
 
@@ -143,7 +137,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithUID(value types.U
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithResourceVersion(value string) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
+	b.ResourceVersion = &value
 	return b
 }
 
@@ -152,7 +146,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithResourceVersion(v
 // If called multiple times, the Generation field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithGeneration(value int64) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.Generation = &value
+	b.Generation = &value
 	return b
 }
 
@@ -161,7 +155,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithGeneration(value 
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithCreationTimestamp(value metav1.Time) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
+	b.CreationTimestamp = &value
 	return b
 }
 
@@ -170,7 +164,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithCreationTimestamp
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
+	b.DeletionTimestamp = &value
 	return b
 }
 
@@ -179,7 +173,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithDeletionTimestamp
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
+	b.DeletionGracePeriodSeconds = &value
 	return b
 }
 
@@ -189,11 +183,11 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithDeletionGracePeri
 // overwriting an existing map entries in Labels field with the same key.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithLabels(entries map[string]string) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
+	if b.Labels == nil && len(entries) > 0 {
+		b.Labels = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Labels[k] = v
+		b.Labels[k] = v
 	}
 	return b
 }
@@ -204,11 +198,11 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithLabels(entries ma
 // overwriting an existing map entries in Annotations field with the same key.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithAnnotations(entries map[string]string) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
-		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
+	if b.Annotations == nil && len(entries) > 0 {
+		b.Annotations = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.ObjectMetaApplyConfiguration.Annotations[k] = v
+		b.Annotations[k] = v
 	}
 	return b
 }
@@ -222,7 +216,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithOwnerReferences(v
 		if values[i] == nil {
 			panic("nil value passed to WithOwnerReferences")
 		}
-		b.ObjectMetaApplyConfiguration.OwnerReferences = append(b.ObjectMetaApplyConfiguration.OwnerReferences, *values[i])
+		b.OwnerReferences = append(b.OwnerReferences, *values[i])
 	}
 	return b
 }
@@ -233,7 +227,7 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithOwnerReferences(v
 func (b *ValidatingWebhookConfigurationApplyConfiguration) WithFinalizers(values ...string) *ValidatingWebhookConfigurationApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
-		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
+		b.Finalizers = append(b.Finalizers, values[i])
 	}
 	return b
 }
@@ -257,24 +251,8 @@ func (b *ValidatingWebhookConfigurationApplyConfiguration) WithWebhooks(values .
 	return b
 }
 
-// GetKind retrieves the value of the Kind field in the declarative configuration.
-func (b *ValidatingWebhookConfigurationApplyConfiguration) GetKind() *string {
-	return b.TypeMetaApplyConfiguration.Kind
-}
-
-// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
-func (b *ValidatingWebhookConfigurationApplyConfiguration) GetAPIVersion() *string {
-	return b.TypeMetaApplyConfiguration.APIVersion
-}
-
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *ValidatingWebhookConfigurationApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Name
-}
-
-// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
-func (b *ValidatingWebhookConfigurationApplyConfiguration) GetNamespace() *string {
-	b.ensureObjectMetaApplyConfigurationExists()
-	return b.ObjectMetaApplyConfiguration.Namespace
+	return b.Name
 }
