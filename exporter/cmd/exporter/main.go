@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"crypto/sha256"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -86,29 +88,42 @@ func gatherRuntimeInfo(w http.ResponseWriter, r *http.Request) {
 	w.Write(response)
 }
 
+var tlsCertPath string
+var tlsServerName string
+var tlsConfig *tls.Config
+
 func triggerRuntimeInfoExtraction(containerIds []string) (string, error) {
-	conn, err := net.Dial("tcp", EXTRACTOR_ADDRESS)
+	var conn net.Conn
+	var err error
+
+	if tlsConfig != nil {
+		conn, err = tls.Dial("tcp", EXTRACTOR_ADDRESS, tlsConfig)
+	} else {
+		conn, err = net.Dial("tcp", EXTRACTOR_ADDRESS)
+	}
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
 
 	log.Println("Requesting a new runtime extraction")
-	tcpConn, ok := conn.(*net.TCPConn)
-	if !ok {
-		return "", fmt.Errorf("failed to get TCP connection")
-	}
 
 	// Send comma-separated container IDs (empty string if no specific containers requested)
 	payload := strings.Join(containerIds, ",")
 	// write to TCP connection to trigger a runtime extraction
-	fmt.Fprintf(tcpConn, "%s", payload)
-	// and close the write side to signal EOF to the server
-	if err := tcpConn.CloseWrite(); err != nil {
-		return "", fmt.Errorf("failed to close write side: %w", err)
+	fmt.Fprintf(conn, "%s", payload)
+	// close the write side to signal EOF to the server
+	// Both *net.TCPConn and *tls.Conn support CloseWrite()
+	type closeWriter interface {
+		CloseWrite() error
+	}
+	if cw, ok := conn.(closeWriter); ok {
+		if err := cw.CloseWrite(); err != nil {
+			return "", fmt.Errorf("failed to close write side: %w", err)
+		}
 	}
 
-	dataPath, err := bufio.NewReader(tcpConn).ReadString('\n')
+	dataPath, err := bufio.NewReader(conn).ReadString('\n')
 	if err != nil {
 		return "", err
 	}
@@ -191,8 +206,26 @@ func collectWorkloadPayload(hash bool, dataPath string) (types.NodeRuntimeInfo, 
 
 func main() {
 	bindAddress := flag.String("bind", "127.0.0.1", "Bind address")
+	flag.StringVar(&tlsCertPath, "tls-cert", "", "Path to TLS certificate file (PEM format) for verifying the extractor server")
+	flag.StringVar(&tlsServerName, "tls-server-name", "", "Server name for TLS certificate verification (must match a SAN in the server certificate)")
 
 	flag.Parse()
+
+	if tlsCertPath != "" {
+		caCert, err := os.ReadFile(tlsCertPath)
+		if err != nil {
+			log.Fatalf("Failed to read TLS certificate file: %v", err)
+		}
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			log.Fatal("Failed to parse TLS certificate")
+		}
+		tlsConfig = &tls.Config{
+			RootCAs:    caCertPool,
+			ServerName: tlsServerName,
+		}
+		log.Printf("TLS enabled with cert=%s", tlsCertPath)
+	}
 
 	http.HandleFunc("/gather_runtime_info", gatherRuntimeInfo)
 

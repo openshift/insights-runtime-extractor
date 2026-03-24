@@ -25,10 +25,17 @@ spec:
           volumeMounts:
             - mountPath: /data
               name: data-volume
+            - mountPath: /etc/tls
+              name: insights-runtime-extractor-tls
+              readOnly: true
           command:
             - /exporter
             - -bind
             - 0.0.0.0
+            - -tls-cert
+            - /etc/tls/tls.crt
+            - -tls-server-name
+            - exporter.openshift-insights.svc
         - name: extractor
           image: quay.io/openshift/origin-insights-runtime-extractor:latest
           imagePullPolicy: Always
@@ -47,6 +54,15 @@ spec:
               name: crio-socket
             - mountPath: /data
               name: data-volume
+            - mountPath: /etc/tls/
+              name: insights-runtime-extractor-tls
+              readOnly: true
+          command:
+            - /extractor_server
+            - --tls-cert
+            - /etc/tls/tls.crt
+            - --tls-key
+            - /etc/tls/tls.key
       volumes:
         - name: crio-socket
           hostPath:
@@ -54,3 +70,6 @@ spec:
             type: Socket
         - name: data-volume
           emptyDir: {}
+        - name: insights-runtime-extractor-tls
+          secret:
+            secretName: insights-runtime-extractor-tls

@@ -42,7 +42,7 @@ Rationale:
 
 ---
 
-## Planned Changes
+## Implemented Changes
 
 ### 1. Extractor Server (Rust)
 
@@ -84,9 +84,11 @@ Change the function to accept `impl Read + Write` instead of `TcpStream` so it w
 
 Add:
 ```toml
-rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "std", "tls12"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "std"] }
 rustls-pemfile = "2"
 ```
+
+TLS 1.3 is enabled by default in `rustls`. TLS 1.2 is not included to enforce modern protocol usage.
 
 Run `cargo vendor` to update `extractor/vendor/` for the offline build.
 
