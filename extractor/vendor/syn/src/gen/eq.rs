@@ -160,6 +160,25 @@ impl PartialEq for crate::BoundLifetimes {
         self.lifetimes == other.lifetimes
     }
 }
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl Eq for crate::CapturedParam {}
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl PartialEq for crate::CapturedParam {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (
+                crate::CapturedParam::Lifetime(self0),
+                crate::CapturedParam::Lifetime(other0),
+            ) => self0 == other0,
+            (crate::CapturedParam::Ident(self0), crate::CapturedParam::Ident(other0)) => {
+                self0 == other0
+            }
+            _ => false,
+        }
+    }
+}
 #[cfg(any(feature = "derive", feature = "full"))]
 #[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
 impl Eq for crate::ConstParam {}
@@ -297,6 +316,10 @@ impl PartialEq for crate::Expr {
             (crate::Expr::Path(self0), crate::Expr::Path(other0)) => self0 == other0,
             #[cfg(feature = "full")]
             (crate::Expr::Range(self0), crate::Expr::Range(other0)) => self0 == other0,
+            #[cfg(feature = "full")]
+            (crate::Expr::RawAddr(self0), crate::Expr::RawAddr(other0)) => {
+                self0 == other0
+            }
             (crate::Expr::Reference(self0), crate::Expr::Reference(other0)) => {
                 self0 == other0
             }
@@ -608,6 +631,17 @@ impl PartialEq for crate::ExprRange {
     fn eq(&self, other: &Self) -> bool {
         self.attrs == other.attrs && self.start == other.start
             && self.limits == other.limits && self.end == other.end
+    }
+}
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl Eq for crate::ExprRawAddr {}
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl PartialEq for crate::ExprRawAddr {
+    fn eq(&self, other: &Self) -> bool {
+        self.attrs == other.attrs && self.mutability == other.mutability
+            && self.expr == other.expr
     }
 }
 #[cfg(any(feature = "derive", feature = "full"))]
@@ -1622,6 +1656,32 @@ impl PartialEq for crate::PathSegment {
         self.ident == other.ident && self.arguments == other.arguments
     }
 }
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl Eq for crate::PointerMutability {}
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl PartialEq for crate::PointerMutability {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (crate::PointerMutability::Const(_), crate::PointerMutability::Const(_)) => {
+                true
+            }
+            (crate::PointerMutability::Mut(_), crate::PointerMutability::Mut(_)) => true,
+            _ => false,
+        }
+    }
+}
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl Eq for crate::PreciseCapture {}
+#[cfg(feature = "full")]
+#[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
+impl PartialEq for crate::PreciseCapture {
+    fn eq(&self, other: &Self) -> bool {
+        self.params == other.params
+    }
+}
 #[cfg(any(feature = "derive", feature = "full"))]
 #[cfg_attr(docsrs, doc(cfg(feature = "extra-traits")))]
 impl Eq for crate::PredicateLifetime {}
@@ -1988,6 +2048,11 @@ impl PartialEq for crate::TypeParamBound {
             (
                 crate::TypeParamBound::Lifetime(self0),
                 crate::TypeParamBound::Lifetime(other0),
+            ) => self0 == other0,
+            #[cfg(feature = "full")]
+            (
+                crate::TypeParamBound::PreciseCapture(self0),
+                crate::TypeParamBound::PreciseCapture(other0),
             ) => self0 == other0,
             (
                 crate::TypeParamBound::Verbatim(self0),

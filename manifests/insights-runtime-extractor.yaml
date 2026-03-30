@@ -22,13 +22,24 @@ spec:
         - name: exporter
           image: quay.io/openshift/origin-insights-runtime-exporter:latest
           imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /data
-              name: data-volume
           command:
             - /exporter
             - -bind
             - 0.0.0.0
+            - --tls-cert
+            - /tls/tls.crt
+            - --tls-key
+            - /tls/tls.key
+            - --tls-ca
+            - /tls/tls.crt
+            - --tls-server-name
+            - localhost
+          volumeMounts:
+            - mountPath: /data
+              name: data-volume
+            - mountPath: /tls
+              name: tls-certs
+              readOnly: true
         - name: extractor
           image: quay.io/openshift/origin-insights-runtime-extractor:latest
           imagePullPolicy: Always
@@ -42,11 +53,20 @@ spec:
                 - ALL
               add:
                 - CAP_SYS_ADMIN
+          command:
+            - /extractor_server
+            - --tls-cert
+            - /tls/tls.crt
+            - --tls-key
+            - /tls/tls.key
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
             - mountPath: /data
               name: data-volume
+            - mountPath: /tls
+              name: tls-certs
+              readOnly: true
       volumes:
         - name: crio-socket
           hostPath:
@@ -54,3 +74,6 @@ spec:
             type: Socket
         - name: data-volume
           emptyDir: {}
+        - name: tls-certs
+          secret:
+            secretName: extractor-tls

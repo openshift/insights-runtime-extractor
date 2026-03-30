@@ -2,7 +2,7 @@ FROM registry.ci.openshift.org/ocp/4.22:base-rhel9 AS rust-builder
 ARG TARGETARCH
 
 RUN dnf update -y && \
-    dnf -y install gcc make wget rust-toolset rustfmt && \
+    dnf -y install gcc make wget rust-toolset rustfmt openssl-devel perl && \
     dnf clean all && \
     rm -rf /var/cache/dnf/*
 WORKDIR /workspace/extractor

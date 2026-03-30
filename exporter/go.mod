@@ -4,6 +4,8 @@ go 1.25.3
 
 require (
 	github.com/onsi/gomega v1.39.1
+	github.com/openshift/api v0.0.0-20260329113031-1e7cd4b531e7
+	github.com/openshift/client-go v0.0.0-20260320040014-4b5fc2cdad98
 	github.com/stretchr/testify v1.11.1
 	k8s.io/api v0.35.1
 	k8s.io/apimachinery v0.35.1
