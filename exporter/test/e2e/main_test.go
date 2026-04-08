@@ -103,8 +103,12 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 						}, {
 							MountPath: "/data",
 							Name:      "data-volume",
+						}, {
+							MountPath: "/tls",
+							Name:      "tls-certs",
+							ReadOnly:  true,
 						}},
-						Command: []string{"/extractor_server", "--log-level", "trace"},
+						Command: []string{"/extractor_server", "--log-level", "trace", "--tls-cert", "/tls/tls.crt", "--tls-key", "/tls/tls.key"},
 					}, {
 						Name:            "exporter",
 						Image:           testedExporterImage,
@@ -112,8 +116,12 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 						VolumeMounts: []corev1.VolumeMount{{
 							MountPath: "/data",
 							Name:      "data-volume",
+						}, {
+							MountPath: "/tls",
+							Name:      "tls-certs",
+							ReadOnly:  true,
 						}},
-						Command: []string{"/exporter", "-bind", "0.0.0.0"},
+						Command: []string{"/exporter", "-bind", "0.0.0.0", "--tls-cert", "/tls/tls.crt", "--tls-key", "/tls/tls.key", "--tls-ca", "/tls/tls.crt", "--tls-server-name", "localhost"},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: "crio-socket",
@@ -126,6 +134,13 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 						Name: "data-volume",
 						VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					}, {
+						Name: "tls-certs",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "extractor-tls",
+							},
 						},
 					}},
 				},
