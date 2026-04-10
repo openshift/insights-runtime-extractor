@@ -1,3 +1,5 @@
+extractor/target/
+runtime-samples/**/target/
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
@@ -32,7 +34,6 @@ out-*/
 .svn
 # ignore Maven generated target folders
 ~
-target
 # ignore downloaded maven
 /tools/maven
 /tools/maven.zip

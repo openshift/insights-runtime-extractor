@@ -245,7 +245,7 @@ func extractRuntimeInfoFromContainer(ctx context.Context, g *Ω.WithT, c *envcon
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
 
 	var stdout, stderr bytes.Buffer
-	command := []string{"curl", "-s", "http://" + insightsRuntimePodIPs[nodeName] + ":8000/gather_runtime_info?hash=false"}
+	command := []string{"curl", "-sk", "https://" + insightsRuntimePodIPs[nodeName] + ":8000/gather_runtime_info?hash=false"}
 
 	err = client.Resources().ExecInPod(ctx, insightsRuntimeExtractorNamespace, curlPodName, "curl", command, &stdout, &stderr)
 	g.Expect(err).ShouldNot(Ω.HaveOccurred())
