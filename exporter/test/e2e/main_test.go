@@ -7,10 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/e2e-framework/klient/conf"
 	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
@@ -53,6 +55,7 @@ func TestMain(m *testing.M) {
 
 	testenv.Setup(
 		envfuncs.CreateNamespace(namespace),
+		createHeadlessService(),
 		deployAndWaitForReadiness(curl, "app.kubernetes.io/name=curl-e2e"),
 		deployAndWaitForReadiness(insightsOperatorRuntime, insightsOperatorRuntimeLabel),
 	)
@@ -61,6 +64,7 @@ func TestMain(m *testing.M) {
 		fetchExtractorLogs(),
 		undeploy(insightsOperatorRuntime),
 		undeploy(curl),
+		deleteHeadlessService(),
 		envfuncs.DeleteNamespace(namespace),
 	)
 
@@ -104,11 +108,11 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 							MountPath: "/data",
 							Name:      "data-volume",
 						}, {
-							MountPath: "/tls",
-							Name:      "tls-certs",
+							MountPath: "/etc/tls/private",
+							Name:      "insights-runtime-extractor-tls",
 							ReadOnly:  true,
 						}},
-						Command: []string{"/extractor_server", "--log-level", "trace", "--tls-cert", "/tls/tls.crt", "--tls-key", "/tls/tls.key"},
+						Command: []string{"/extractor_server", "--log-level", "trace", "--tls-cert", "/etc/tls/private/tls.crt", "--tls-key", "/etc/tls/private/tls.key"},
 					}, {
 						Name:            "exporter",
 						Image:           testedExporterImage,
@@ -117,11 +121,11 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 							MountPath: "/data",
 							Name:      "data-volume",
 						}, {
-							MountPath: "/tls",
-							Name:      "tls-certs",
+							MountPath: "/etc/tls/private",
+							Name:      "insights-runtime-extractor-tls",
 							ReadOnly:  true,
 						}},
-						Command: []string{"/exporter", "-bind", "0.0.0.0", "--tls-cert", "/tls/tls.crt", "--tls-key", "/tls/tls.key", "--tls-ca", "/tls/tls.crt", "--tls-server-name", "localhost"},
+						Command: []string{"/exporter", "-bind", "0.0.0.0", "-tls-cert", "/etc/tls/private/tls.crt", "-tls-key", "/tls/tls.key", "-tls-ca", "/etc/tls/private/tls.crt", "-tls-server-name", "localhost"},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: "crio-socket",
@@ -136,10 +140,10 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						},
 					}, {
-						Name: "tls-certs",
+						Name: "insights-runtime-extractor-tls",
 						VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
-								SecretName: "extractor-tls",
+								SecretName: "insights-runtime-extractor-tls",
 							},
 						},
 					}},
@@ -169,6 +173,90 @@ func newCurlDeployment() *appsv1.Deployment {
 				},
 			},
 		},
+	}
+}
+
+// createHeadlessService creates a headless service with the serving-cert annotation,
+// waits for the OpenShift service cert controller to generate the TLS secret
+func createHeadlessService() env.Func {
+	return func(ctx context.Context, c *envconf.Config) (context.Context, error) {
+		client, err := c.NewClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create client: %v", err)
+		}
+
+		// Create the headless service with the serving-cert annotation
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "exporter",
+				Namespace: insightsRuntimeExtractorNamespace,
+				Annotations: map[string]string{
+					"service.beta.openshift.io/serving-cert-secret-name": "insights-runtime-extractor-tls",
+				},
+				Labels: map[string]string{
+					"app.kubernetes.io/name": "insights-runtime-extractor-e2e",
+				},
+			},
+			Spec: corev1.ServiceSpec{
+				Selector: map[string]string{
+					"app.kubernetes.io/name": "insights-runtime-extractor-e2e",
+				},
+				Ports: []corev1.ServicePort{{
+					Name:     "https",
+					Protocol: corev1.ProtocolTCP,
+					Port:     8000,
+				}},
+				Type:      corev1.ServiceTypeClusterIP,
+				ClusterIP: corev1.ClusterIPNone,
+			},
+		}
+
+		if err = client.Resources(insightsRuntimeExtractorNamespace).Create(ctx, service); err != nil {
+			return nil, fmt.Errorf("failed to create service: %v", err)
+		}
+		fmt.Println("Service created: exporter")
+
+		// Wait for the OpenShift service cert controller to create the secret
+		clientset, err := kubernetes.NewForConfig(client.RESTConfig())
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Kubernetes clientset: %v", err)
+		}
+
+		err = apimachinerywait.PollUntilContextTimeout(ctx, 5*time.Second, 2*time.Minute, true, func(ctx context.Context) (bool, error) {
+			_, err := clientset.CoreV1().Secrets(insightsRuntimeExtractorNamespace).Get(ctx, "insights-runtime-extractor-tls", metav1.GetOptions{})
+			if err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("timed out waiting for secret insights-runtime-extractor-tls: %v", err)
+		}
+		fmt.Println("Secret insights-runtime-extractor-tls found")
+
+		return ctx, nil
+	}
+}
+
+// deleteHeadlessService cleans up the headless service.
+func deleteHeadlessService() env.Func {
+	return func(ctx context.Context, c *envconf.Config) (context.Context, error) {
+		client, err := c.NewClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create client: %v", err)
+		}
+
+		service := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "exporter",
+				Namespace: insightsRuntimeExtractorNamespace,
+			},
+		}
+		if err = client.Resources(insightsRuntimeExtractorNamespace).Delete(ctx, service); err != nil {
+			fmt.Printf("failed to delete service: %v\n", err)
+		}
+
+		return ctx, nil
 	}
 }
 
