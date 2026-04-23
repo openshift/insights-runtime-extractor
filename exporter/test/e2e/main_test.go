@@ -71,6 +71,7 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 	securityContextPrivileged := true
 	hostPathSocket := corev1.HostPathSocket
 	labels := map[string]string{"app.kubernetes.io/name": "insights-runtime-extractor-e2e"}
+	tlsServerName := "exporter." + insightsRuntimeExtractorNamespace + ".svc.cluster.local"
 
 	return &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{Name: "insights-runtime-extractor-e2e", Namespace: insightsRuntimeExtractorNamespace},
@@ -103,8 +104,13 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 						}, {
 							MountPath: "/data",
 							Name:      "data-volume",
+						}, {
+							MountPath: "/etc/tls/private",
+							Name:      "insights-runtime-extractor-tls",
+							ReadOnly:  true,
 						}},
-						Command: []string{"/extractor_server", "--log-level", "trace"},
+						
+						Command: []string{"/extractor_server", "--log-level", "trace", "--tls-cert", "/etc/tls/private/tls.crt", "--tls-key", "/etc/tls/private/tls.key"},
 					}, {
 						Name:            "exporter",
 						Image:           testedExporterImage,
@@ -112,8 +118,12 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 						VolumeMounts: []corev1.VolumeMount{{
 							MountPath: "/data",
 							Name:      "data-volume",
+						}, {
+							MountPath: "/etc/tls/private",
+							Name:      "insights-runtime-extractor-tls",
+							ReadOnly:  true,
 						}},
-						Command: []string{"/exporter", "-bind", "0.0.0.0"},
+						Command: []string{"/exporter", "-bind", "0.0.0.0", "-tls-cert", "/etc/tls/private/tls.crt", "-tls-key", "/etc/tls/private/tls.key", "-tls-ca", "/etc/tls/private/tls.crt", "-tls-server-name", tlsServerName},
 					}},
 					Volumes: []corev1.Volume{{
 						Name: "crio-socket",
@@ -126,6 +136,13 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 						Name: "data-volume",
 						VolumeSource: corev1.VolumeSource{
 							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+					}, {
+						Name: "insights-runtime-extractor-tls",
+						VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "insights-runtime-extractor-tls",
+							},
 						},
 					}},
 				},

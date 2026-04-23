@@ -1,15 +1,17 @@
 use crate::attr::Attribute;
 #[cfg(all(feature = "parsing", feature = "full"))]
 use crate::error::Result;
+#[cfg(feature = "parsing")]
+use crate::ext::IdentExt as _;
 #[cfg(feature = "full")]
 use crate::generics::BoundLifetimes;
 use crate::ident::Ident;
-#[cfg(feature = "full")]
+#[cfg(any(feature = "parsing", feature = "full"))]
 use crate::lifetime::Lifetime;
 use crate::lit::Lit;
 use crate::mac::Macro;
 use crate::op::{BinOp, UnOp};
-#[cfg(all(feature = "parsing", feature = "full"))]
+#[cfg(feature = "parsing")]
 use crate::parse::ParseStream;
 #[cfg(feature = "full")]
 use crate::pat::Pat;
@@ -201,6 +203,9 @@ ast_enum_of_structs! {
 
         /// A range expression: `1..2`, `1..`, `..2`, `1..=2`, `..=2`.
         Range(ExprRange),
+
+        /// Address-of operation: `&raw const place` or `&raw mut place`.
+        RawAddr(ExprRawAddr),
 
         /// A referencing operation: `&a` or `&mut a`.
         Reference(ExprReference),
@@ -575,6 +580,18 @@ ast_struct! {
 }
 
 ast_struct! {
+    /// Address-of operation: `&raw const place` or `&raw mut place`.
+    #[cfg_attr(docsrs, doc(cfg(feature = "full")))]
+    pub struct ExprRawAddr #full {
+        pub attrs: Vec<Attribute>,
+        pub and_token: Token![&],
+        pub raw: Token![raw],
+        pub mutability: PointerMutability,
+        pub expr: Box<Expr>,
+    }
+}
+
+ast_struct! {
     /// A referencing operation: `&a` or `&mut a`.
     #[cfg_attr(docsrs, doc(cfg(any(feature = "full", feature = "derive"))))]
     pub struct ExprReference {
@@ -874,6 +891,36 @@ impl Expr {
         parsing::parse_with_earlier_boundary_rule(input)
     }
 
+    /// Returns whether the next token in the parse stream is one that might
+    /// possibly form the beginning of an expr.
+    ///
+    /// This classification is a load-bearing part of the grammar of some Rust
+    /// expressions, notably `return` and `break`. For example `return < …` will
+    /// never parse `<` as a binary operator regardless of what comes after,
+    /// because `<` is a legal starting token for an expression and so it's
+    /// required to be continued as a return value, such as `return <Struct as
+    /// Trait>::CONST`. Meanwhile `return > …` treats the `>` as a binary
+    /// operator because it cannot be a starting token for any Rust expression.
+    #[cfg(feature = "parsing")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "parsing")))]
+    pub fn peek(input: ParseStream) -> bool {
+        input.peek(Ident::peek_any) // value name or keyword
+            || input.peek(token::Paren) // tuple
+            || input.peek(token::Bracket) // array
+            || input.peek(token::Brace) // block
+            || input.peek(Lit) // literal
+            || input.peek(Token![!]) && !input.peek(Token![!=]) // operator not
+            || input.peek(Token![-]) && !input.peek(Token![-=]) && !input.peek(Token![->]) // unary minus
+            || input.peek(Token![*]) && !input.peek(Token![*=]) // dereference
+            || input.peek(Token![|]) && !input.peek(Token![|=]) // closure
+            || input.peek(Token![&]) && !input.peek(Token![&=]) // reference
+            || input.peek(Token![..]) // range
+            || input.peek(Token![<]) && !input.peek(Token![<=]) && !input.peek(Token![<<=]) // associated path
+            || input.peek(Token![::]) // absolute path
+            || input.peek(Lifetime) // labeled loop
+            || input.peek(Token![#]) // expression attributes
+    }
+
     #[cfg(all(feature = "parsing", feature = "full"))]
     pub(crate) fn replace_attrs(&mut self, new: Vec<Attribute>) -> Vec<Attribute> {
         match self {
@@ -904,6 +951,7 @@ impl Expr {
             | Expr::Paren(ExprParen { attrs, .. })
             | Expr::Path(ExprPath { attrs, .. })
             | Expr::Range(ExprRange { attrs, .. })
+            | Expr::RawAddr(ExprRawAddr { attrs, .. })
             | Expr::Reference(ExprReference { attrs, .. })
             | Expr::Repeat(ExprRepeat { attrs, .. })
             | Expr::Return(ExprReturn { attrs, .. })
@@ -1099,6 +1147,17 @@ ast_enum! {
     }
 }
 
+#[cfg(feature = "full")]
+ast_enum! {
+    /// Mutability of a raw pointer (`*const T`, `*mut T`), in which non-mutable
+    /// isn't the implicit default.
+    #[cfg_attr(docsrs, doc(cfg(feature = "full")))]
+    pub enum PointerMutability {
+        Const(Token![const]),
+        Mut(Token![mut]),
+    }
+}
+
 #[cfg(feature = "parsing")]
 pub(crate) mod parsing {
     #[cfg(feature = "full")]
@@ -1111,16 +1170,14 @@ pub(crate) mod parsing {
     use crate::expr::{
         Arm, ExprArray, ExprAssign, ExprAsync, ExprAwait, ExprBlock, ExprBreak, ExprClosure,
         ExprConst, ExprContinue, ExprForLoop, ExprIf, ExprInfer, ExprLet, ExprLoop, ExprMatch,
-        ExprRange, ExprRepeat, ExprReturn, ExprTry, ExprTryBlock, ExprUnsafe, ExprWhile, ExprYield,
-        Label, RangeLimits,
+        ExprRange, ExprRawAddr, ExprRepeat, ExprReturn, ExprTry, ExprTryBlock, ExprUnsafe,
+        ExprWhile, ExprYield, Label, PointerMutability, RangeLimits,
     };
     use crate::expr::{
         Expr, ExprBinary, ExprCall, ExprCast, ExprField, ExprGroup, ExprIndex, ExprLit, ExprMacro,
         ExprMethodCall, ExprParen, ExprPath, ExprReference, ExprStruct, ExprTuple, ExprUnary,
         FieldValue, Index, Member,
     };
-    #[cfg(feature = "full")]
-    use crate::ext::IdentExt as _;
     #[cfg(feature = "full")]
     use crate::generics::BoundLifetimes;
     use crate::ident::Ident;
@@ -1148,11 +1205,6 @@ pub(crate) mod parsing {
     #[cfg(feature = "full")]
     use proc_macro2::TokenStream;
     use std::mem;
-
-    mod kw {
-        crate::custom_keyword!(builtin);
-        crate::custom_keyword!(raw);
-    }
 
     // When we're parsing expressions which occur before blocks, like in an if
     // statement's condition, we cannot parse a struct literal.
@@ -1242,25 +1294,6 @@ pub(crate) mod parsing {
         fn clone(&self) -> Self {
             *self
         }
-    }
-
-    #[cfg(feature = "full")]
-    fn can_begin_expr(input: ParseStream) -> bool {
-        input.peek(Ident::peek_any) // value name or keyword
-            || input.peek(token::Paren) // tuple
-            || input.peek(token::Bracket) // array
-            || input.peek(token::Brace) // block
-            || input.peek(Lit) // literal
-            || input.peek(Token![!]) && !input.peek(Token![!=]) // operator not
-            || input.peek(Token![-]) && !input.peek(Token![-=]) && !input.peek(Token![->]) // unary minus
-            || input.peek(Token![*]) && !input.peek(Token![*=]) // dereference
-            || input.peek(Token![|]) && !input.peek(Token![|=]) // closure
-            || input.peek(Token![&]) && !input.peek(Token![&=]) // reference
-            || input.peek(Token![..]) // range notation
-            || input.peek(Token![<]) && !input.peek(Token![<=]) && !input.peek(Token![<<=]) // associated path
-            || input.peek(Token![::]) // global path
-            || input.peek(Lifetime) // labeled loop
-            || input.peek(Token![#]) // expression attributes
     }
 
     #[cfg(feature = "full")]
@@ -1468,7 +1501,7 @@ pub(crate) mod parsing {
 
         if input.peek(Token![&]) {
             let and_token: Token![&] = input.parse()?;
-            let raw: Option<kw::raw> = if input.peek(kw::raw)
+            let raw: Option<Token![raw]> = if input.peek(Token![raw])
                 && (input.peek2(Token![mut]) || input.peek2(Token![const]))
             {
                 Some(input.parse()?)
@@ -1476,12 +1509,23 @@ pub(crate) mod parsing {
                 None
             };
             let mutability: Option<Token![mut]> = input.parse()?;
-            if raw.is_some() && mutability.is_none() {
-                input.parse::<Token![const]>()?;
-            }
+            let const_token: Option<Token![const]> = if raw.is_some() && mutability.is_none() {
+                Some(input.parse()?)
+            } else {
+                None
+            };
             let expr = Box::new(unary_expr(input, allow_struct)?);
-            if raw.is_some() {
-                Ok(Expr::Verbatim(verbatim::between(&begin, input)))
+            if let Some(raw) = raw {
+                Ok(Expr::RawAddr(ExprRawAddr {
+                    attrs,
+                    and_token,
+                    raw,
+                    mutability: match mutability {
+                        Some(mut_token) => PointerMutability::Mut(mut_token),
+                        None => PointerMutability::Const(const_token.unwrap()),
+                    },
+                    expr,
+                }))
             } else {
                 Ok(Expr::Reference(ExprReference {
                     attrs,
@@ -1730,7 +1774,8 @@ pub(crate) mod parsing {
             || input.peek(Token![async]) && (input.peek2(Token![|]) || input.peek2(Token![move]))
         {
             expr_closure(input, allow_struct).map(Expr::Closure)
-        } else if input.peek(kw::builtin) && input.peek2(Token![#]) {
+        } else if token::parsing::peek_keyword(input.cursor(), "builtin") && input.peek2(Token![#])
+        {
             expr_builtin(input)
         } else if input.peek(Ident)
             || input.peek(Token![::])
@@ -1847,7 +1892,7 @@ pub(crate) mod parsing {
     fn expr_builtin(input: ParseStream) -> Result<Expr> {
         let begin = input.fork();
 
-        input.parse::<kw::builtin>()?;
+        token::parsing::keyword(input, "builtin")?;
         input.parse::<Token![#]>()?;
         input.parse::<Ident>()?;
 
@@ -2361,6 +2406,21 @@ pub(crate) mod parsing {
 
     #[cfg(feature = "full")]
     #[cfg_attr(docsrs, doc(cfg(feature = "parsing")))]
+    impl Parse for ExprRawAddr {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let allow_struct = AllowStruct(true);
+            Ok(ExprRawAddr {
+                attrs: Vec::new(),
+                and_token: input.parse()?,
+                raw: input.parse()?,
+                mutability: input.parse()?,
+                expr: Box::new(unary_expr(input, allow_struct)?),
+            })
+        }
+    }
+
+    #[cfg(feature = "full")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "parsing")))]
     impl Parse for ExprReference {
         fn parse(input: ParseStream) -> Result<Self> {
             let allow_struct = AllowStruct(true);
@@ -2390,7 +2450,7 @@ pub(crate) mod parsing {
                 attrs: Vec::new(),
                 return_token: input.parse()?,
                 expr: {
-                    if can_begin_expr(input) {
+                    if Expr::peek(input) {
                         Some(input.parse()?)
                     } else {
                         None
@@ -2428,7 +2488,7 @@ pub(crate) mod parsing {
                 attrs: Vec::new(),
                 yield_token: input.parse()?,
                 expr: {
-                    if can_begin_expr(input) {
+                    if Expr::peek(input) {
                         Some(input.parse()?)
                     } else {
                         None
@@ -2641,7 +2701,7 @@ pub(crate) mod parsing {
         }
 
         input.advance_to(&ahead);
-        let expr = if can_begin_expr(input) && (allow_struct.0 || !input.peek(token::Brace)) {
+        let expr = if Expr::peek(input) && (allow_struct.0 || !input.peek(token::Brace)) {
             Some(input.parse()?)
         } else {
             None
@@ -2970,6 +3030,21 @@ pub(crate) mod parsing {
         }
     }
 
+    #[cfg(feature = "full")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "parsing")))]
+    impl Parse for PointerMutability {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let lookahead = input.lookahead1();
+            if lookahead.peek(Token![const]) {
+                Ok(PointerMutability::Const(input.parse()?))
+            } else if lookahead.peek(Token![mut]) {
+                Ok(PointerMutability::Mut(input.parse()?))
+            } else {
+                Err(lookahead.error())
+            }
+        }
+    }
+
     fn check_cast(input: ParseStream) -> Result<()> {
         let kind = if input.peek(Token![.]) && !input.peek(Token![..]) {
             if input.peek2(Token![await]) {
@@ -3004,8 +3079,8 @@ pub(crate) mod printing {
     use crate::expr::{
         Arm, ExprArray, ExprAssign, ExprAsync, ExprAwait, ExprBlock, ExprBreak, ExprClosure,
         ExprConst, ExprContinue, ExprForLoop, ExprIf, ExprInfer, ExprLet, ExprLoop, ExprMatch,
-        ExprRange, ExprRepeat, ExprReturn, ExprTry, ExprTryBlock, ExprUnsafe, ExprWhile, ExprYield,
-        Label, RangeLimits,
+        ExprRange, ExprRawAddr, ExprRepeat, ExprReturn, ExprTry, ExprTryBlock, ExprUnsafe,
+        ExprWhile, ExprYield, Label, PointerMutability, RangeLimits,
     };
     use crate::expr::{
         Expr, ExprBinary, ExprCall, ExprCast, ExprField, ExprGroup, ExprIndex, ExprLit, ExprMacro,
@@ -3131,6 +3206,8 @@ pub(crate) mod printing {
             Expr::Path(e) => e.to_tokens(tokens),
             #[cfg(feature = "full")]
             Expr::Range(e) => print_expr_range(e, tokens, fixup),
+            #[cfg(feature = "full")]
+            Expr::RawAddr(e) => print_expr_raw_addr(e, tokens, fixup),
             Expr::Reference(e) => print_expr_reference(e, tokens, fixup),
             #[cfg(feature = "full")]
             Expr::Repeat(e) => e.to_tokens(tokens),
@@ -3689,6 +3766,28 @@ pub(crate) mod printing {
         }
     }
 
+    #[cfg(feature = "full")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "printing")))]
+    impl ToTokens for ExprRawAddr {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            print_expr_raw_addr(self, tokens, FixupContext::NONE);
+        }
+    }
+
+    #[cfg(feature = "full")]
+    fn print_expr_raw_addr(e: &ExprRawAddr, tokens: &mut TokenStream, fixup: FixupContext) {
+        outer_attrs_to_tokens(&e.attrs, tokens);
+        e.and_token.to_tokens(tokens);
+        e.raw.to_tokens(tokens);
+        e.mutability.to_tokens(tokens);
+        print_subexpression(
+            &e.expr,
+            fixup.trailing_precedence(&e.expr) < Precedence::Prefix,
+            tokens,
+            fixup.subsequent_subexpression(),
+        );
+    }
+
     #[cfg_attr(docsrs, doc(cfg(feature = "printing")))]
     impl ToTokens for ExprReference {
         fn to_tokens(&self, tokens: &mut TokenStream) {
@@ -3926,6 +4025,17 @@ pub(crate) mod printing {
             match self {
                 RangeLimits::HalfOpen(t) => t.to_tokens(tokens),
                 RangeLimits::Closed(t) => t.to_tokens(tokens),
+            }
+        }
+    }
+
+    #[cfg(feature = "full")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "printing")))]
+    impl ToTokens for PointerMutability {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            match self {
+                PointerMutability::Const(const_token) => const_token.to_tokens(tokens),
+                PointerMutability::Mut(mut_token) => mut_token.to_tokens(tokens),
             }
         }
     }

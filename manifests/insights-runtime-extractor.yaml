@@ -20,17 +20,31 @@ spec:
         kubernetes.io/os: linux
       containers:
         - name: exporter
-          image: quay.io/openshift/origin-insights-runtime-exporter:latest
+          image: quay.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
-          volumeMounts:
-            - mountPath: /data
-              name: data-volume
           command:
             - /exporter
             - -bind
             - 0.0.0.0
+            - -tls-cert
+            - /etc/tls/private/tls.crt
+            - -tls-key
+            - /etc/tls/private/tls.key
+            - -tls-ca
+            - /var/run/configmaps/service-ca-bundle/service-ca.crt
+            - -tls-server-name
+            - localhost
+          volumeMounts:
+            - mountPath: /data
+              name: data-volume
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
+              readOnly: true
+            - mountPath: /var/run/configmaps/service-ca-bundle
+              name: service-ca-bundle
+              readOnly: true
         - name: extractor
-          image: quay.io/openshift/origin-insights-runtime-extractor:latest
+          image: quay.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
@@ -42,11 +56,20 @@ spec:
                 - ALL
               add:
                 - CAP_SYS_ADMIN
+          command:
+            - /extractor_server
+            - --tls-cert
+            - /etc/tls/private/tls.crt
+            - --tls-key
+            - /etc/tls/private/tls.key
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
             - mountPath: /data
               name: data-volume
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
+              readOnly: true
       volumes:
         - name: crio-socket
           hostPath:
@@ -54,3 +77,9 @@ spec:
             type: Socket
         - name: data-volume
           emptyDir: {}
+        - name: insights-runtime-extractor-tls
+          secret:
+            secretName: insights-runtime-extractor-tls
+        - name: service-ca-bundle
+          configMap:
+            name: service-ca-bundle

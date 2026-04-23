@@ -45,3 +45,45 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: insights-runtime-extractor-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: insights-runtime-extractor
+rules:
+  - apiGroups:
+      - ""
+    verbs:
+      - create
+    resources:
+      - pods/exec
+  - apiGroups:
+      - apps
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - watch
+    resources:
+      - daemonsets
+  - apiGroups:
+      - config.openshift.io
+    resources:
+      - apiservers
+    verbs:
+      - get
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: insights-runtime-extractor
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: insights-runtime-extractor
+subjects:
+  - kind: ServiceAccount
+    name: insights-runtime-extractor-sa
+    namespace: default
