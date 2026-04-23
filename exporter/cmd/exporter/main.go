@@ -360,6 +360,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to build TLS config: %v", err)
 	}
+	log.Printf("Using TLS Configuration: %s\n", tlsConfig)
 
 	http.HandleFunc("/gather_runtime_info", gatherRuntimeInfo)
 

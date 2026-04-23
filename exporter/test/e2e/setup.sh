@@ -10,4 +10,6 @@ echo Using namespace for the insights-runtime-extractor: $TEST_NAMESPACE
 
 oc new-project $TEST_NAMESPACE
 oc apply -f test/e2e/insights-runtime-extractor-scc.yaml -n $TEST_NAMESPACE
+oc apply -f test/e2e/service-ca-configmap.yaml -n $TEST_NAMESPACE
+oc apply -f test/e2e/insights-runtime-extractor-service.yaml -n $TEST_NAMESPACE
 

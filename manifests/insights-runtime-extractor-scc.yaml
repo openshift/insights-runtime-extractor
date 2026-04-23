@@ -68,22 +68,22 @@ rules:
     resources:
       - daemonsets
   - apiGroups:
-      - "config.openshift.io"
+      - config.openshift.io
     resources:
-      - "apiservers"
+      - apiservers
     verbs:
-      - "get"
-      - "watch"
+      - get
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: insights-runtime-extractor-tls
+  name: insights-runtime-extractor
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: insights-runtime-extractor-tls
+  name: insights-runtime-extractor
 subjects:
   - kind: ServiceAccount
     name: insights-runtime-extractor-sa
-    namespace: openshift-insights
+    namespace: default
