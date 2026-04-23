@@ -20,28 +20,31 @@ spec:
         kubernetes.io/os: linux
       containers:
         - name: exporter
-          image: quay.io/openshift/origin-insights-runtime-exporter:latest
+          image: quay.io/jmesnil/insights-runtime-exporter:latest
           imagePullPolicy: Always
           command:
             - /exporter
             - -bind
             - 0.0.0.0
-            - --tls-cert
-            - /tls/tls.crt
-            - --tls-key
-            - /tls/tls.key
-            - --tls-ca
-            - /tls/tls.crt
-            - --tls-server-name
+            - -tls-cert
+            - /etc/tls/private/tls.crt
+            - -tls-key
+            - /etc/tls/private/tls.key
+            - -tls-ca
+            - /var/run/configmaps/service-ca-bundle/service-ca.crt
+            - -tls-server-name
             - localhost
           volumeMounts:
             - mountPath: /data
               name: data-volume
-            - mountPath: /tls
-              name: tls-certs
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
+              readOnly: true
+            - mountPath: /var/run/configmaps/service-ca-bundle
+              name: service-ca-bundle
               readOnly: true
         - name: extractor
-          image: quay.io/openshift/origin-insights-runtime-extractor:latest
+          image: quay.io/jmesnil/insights-runtime-extractor:latest
           imagePullPolicy: Always
           env:
             - name: CONTAINER_RUNTIME_ENDPOINT
@@ -56,16 +59,16 @@ spec:
           command:
             - /extractor_server
             - --tls-cert
-            - /tls/tls.crt
+            - /etc/tls/private/tls.crt
             - --tls-key
-            - /tls/tls.key
+            - /etc/tls/private/tls.key
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
             - mountPath: /data
               name: data-volume
-            - mountPath: /tls
-              name: tls-certs
+            - mountPath: /etc/tls/private
+              name: insights-runtime-extractor-tls
               readOnly: true
       volumes:
         - name: crio-socket
@@ -74,6 +77,9 @@ spec:
             type: Socket
         - name: data-volume
           emptyDir: {}
-        - name: tls-certs
+        - name: insights-runtime-extractor-tls
           secret:
-            secretName: extractor-tls
+            secretName: insights-runtime-extractor-tls
+        - name: service-ca-bundle
+          configMap:
+            name: service-ca-bundle

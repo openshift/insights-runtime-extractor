@@ -88,12 +88,16 @@ fn resolve_profile(body: &serde_json::Value) -> TLSProfileSpec {
         .pointer("/spec/tlsSecurityProfile")
         .and_then(|v| serde_json::from_value::<TLSSecurityProfile>(v.clone()).ok());
 
+    info!("Got profile from /spec/tlsSecurityProfile: {:?}", profile);
+
     let profile = match profile {
         Some(p) => p,
         None => return default,
     };
 
     let profile_type = profile.profile_type.as_deref().unwrap_or("Intermediate");
+
+    info!("Got profile type: {:?}", profile_type);
 
     if profile_type == "Custom" {
         if let Some(custom) = profile.custom {
@@ -159,6 +163,7 @@ fn main() {
         .build()
         .expect("Failed to create tokio runtime");
     let profile_spec = rt.block_on(async {
+        info!("querying config.openshift.io/v1/APIServer");
         let client = Client::try_default().await.expect("Failed to create kube client");
 
         let ar = ApiResource::from_gvk(&kube::api::GroupVersionKind {
