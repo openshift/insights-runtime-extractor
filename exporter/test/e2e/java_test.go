@@ -76,3 +76,26 @@ func TestJava_25_0_1(t *testing.T) {
 	}))
 	_ = testenv.Test(t, feature.Feature())
 }
+
+func TestJava_26_0_1(t *testing.T) {
+
+	appName := "plain-java"
+	containerName := "main"
+	image := "quay.io/insights-runtime-extractor-samples/plain-java:26.0.1"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Plain Java from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:              "rhel",
+			OsVersion:       "10.0",
+			Kind:            "Java",
+			KindVersion:     "26.0.1",
+			KindImplementer: "Eclipse Adoptium",
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}

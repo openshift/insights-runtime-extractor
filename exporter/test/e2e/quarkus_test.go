@@ -267,6 +267,58 @@ func TestNativeQuarkus_3_29_2(t *testing.T) {
 	_ = testenv.Test(t, feature.Feature())
 }
 
+func TestQuarkus_3_36_0(t *testing.T) {
+
+	appName := "quarkus"
+	containerName := "main"
+	image := "quay.io/insights-runtime-extractor-samples/quarkus:3.36.0"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Quarkus from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:              "rhel",
+			OsVersion:       "8.10",
+			Kind:            "Java",
+			KindVersion:     "21.0.4",
+			KindImplementer: "Red Hat, Inc.",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "Quarkus",
+				Version: "3.36.0",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
+func TestNativeQuarkus_3_36_0(t *testing.T) {
+
+	appName := "native-quarkus"
+	containerName := "main"
+	image := "quay.io/insights-runtime-extractor-samples/native-quarkus:3.36.0"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Native Quarkus from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:        "rhel",
+			OsVersion: "8.10",
+			Kind:      "GraalVM",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "Quarkus",
+				Version: "3.36.0",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
+
 func TestRedHatBuildOfQuarkus_3_8_6(t *testing.T) {
 
 	appName := "quarkus"
