@@ -162,9 +162,9 @@ func TestWildFly_40_0_0_Final(t *testing.T) {
 	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 		expected := types.ContainerRuntimeInfo{
 			Os:              "rhel",
-			OsVersion:       "9.6",
+			OsVersion:       "9.8",
 			Kind:            "Java",
-			KindVersion:     "21.0.8",
+			KindVersion:     "21.0.11",
 			KindImplementer: "Eclipse Adoptium",
 			Runtimes: []types.RuntimeComponent{{
 				Name:    "WildFly",

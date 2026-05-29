@@ -132,13 +132,13 @@ func TestJBossWebServer_6_2_0(t *testing.T) {
 	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 		expected := types.ContainerRuntimeInfo{
 			Os:              "rhel",
-			OsVersion:       "9.8",
+			OsVersion:       "9.7",
 			Kind:            "Java",
-			KindVersion:     "21.0.7",
+			KindVersion:     "21.0.10",
 			KindImplementer: "Red Hat, Inc.",
 			Runtimes: []types.RuntimeComponent{{
 				Name:    "Apache Tomcat",
-				Version: "10.1.49.redhat-00011",
+				Version: "10.1.49.redhat-00006",
 			}},
 		}
 		g.Expect(runtimeInfo).Should(Ω.Equal(expected))

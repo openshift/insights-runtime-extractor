@@ -109,7 +109,7 @@ func TestNodeJS_26_2_0(t *testing.T) {
 	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 		expected := types.ContainerRuntimeInfo{
 			Os:          "alpine",
-			OsVersion:   "3.23",
+			OsVersion:   "3.23.4",
 			Kind:        "Node.js",
 			KindVersion: "v26.2.0",
 		}

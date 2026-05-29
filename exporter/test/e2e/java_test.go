@@ -90,7 +90,7 @@ func TestJava_26_0_1(t *testing.T) {
 	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
 		expected := types.ContainerRuntimeInfo{
 			Os:              "rhel",
-			OsVersion:       "10.0",
+			OsVersion:       "10.2",
 			Kind:            "Java",
 			KindVersion:     "26.0.1",
 			KindImplementer: "Eclipse Adoptium",
