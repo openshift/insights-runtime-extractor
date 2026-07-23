@@ -1,6 +1,12 @@
 approvers:
 - jmesnil
+- ncaak
+- opokornyy
+- IshwarKanse
 reviewers:
 - jmesnil
+- ncaak
+- opokornyy
+- IshwarKanse
 
 component: "Insights Runtime Extractor"
