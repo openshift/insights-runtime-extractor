@@ -22,3 +22,6 @@ rust-unit-tests:
 unit-tests:
 	cd fingerprints && make unit-tests
 	cd exporter && make unit-tests
+
+lint:
+	cd extractor && make check
