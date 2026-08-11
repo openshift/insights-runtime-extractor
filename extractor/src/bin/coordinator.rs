@@ -2,7 +2,7 @@ use clap::Parser;
 use log::info;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use insights_runtime_extractor::{config, file, get_containers, perms};
+use insights_runtime_extractor::{config, file, file::SCAN_DIR_MODE, get_containers, perms};
 
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
@@ -33,10 +33,10 @@ fn main() {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Get Unix timestamp")
-        .subsec_nanos();
+        .as_nanos();
 
     let exec_dir = format!("data/out-{}", timestamp);
-    file::create_dir(exec_dir.as_str()).expect("Can not create execution directory");
+    file::create_dir(exec_dir.as_str(), SCAN_DIR_MODE).expect("Can not create execution directory");
 
     let config = config::get_config("/");
 

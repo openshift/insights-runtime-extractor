@@ -8,7 +8,7 @@ mod process;
 use log::{debug, error, info, trace, warn};
 use nix::sched::{setns, CloneFlags};
 use nix::sys::wait::{waitpid, WaitStatus};
-use nix::unistd::{fork, seteuid, ForkResult};
+use nix::unistd::{chown, fork, seteuid, ForkResult, Uid};
 use process::ContainerProcess;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -78,9 +78,15 @@ pub fn scan_container(config: &Config, out: &String, container: &Container) {
         // that is put it under a directory from the executing process so that concurrent
         // execution are stored in separate directories.
         let container_output = format!("{}/{}", out, &process.pid);
-        file::create_dir(&container_output).expect(&format!(
+        file::create_dir(&container_output, file::CONTAINER_DIR_MODE).expect(&format!(
             "Can not create output directory for container {}",
             &container.id
+        ));
+        // Hand ownership to the target UID so the child can write after seteuid
+        chown(container_output.as_str(), Some(Uid::from_raw(*process.uid)), None)
+            .expect(&format!(
+                "Can not chown output directory for container {}",
+                &container.id
         ));
 
         let mut container_info = HashMap::new();
