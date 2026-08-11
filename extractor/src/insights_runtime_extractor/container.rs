@@ -73,10 +73,10 @@ pub fn get_containers(container_ids: Vec<String>) -> Vec<Container> {
         containers.push(container);
     }
 
-    return containers;
+    containers
 }
 
-pub fn get_root_pid(container_id: &String) -> u32 {
+pub fn get_root_pid(container_id: &str) -> u32 {
     let output = Command::new("crictl")
         .args([
             "inspect",
@@ -89,10 +89,9 @@ pub fn get_root_pid(container_id: &String) -> u32 {
         .output()
         .expect("Inspect container with crictl");
 
-    let pid = String::from_utf8(output.stdout)
+    String::from_utf8(output.stdout)
         .unwrap()
         .trim()
         .parse::<u32>()
-        .unwrap();
-    return pid;
+        .unwrap()
 }
