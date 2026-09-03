@@ -88,3 +88,30 @@ func TestSpringBootJar_3_5_3(t *testing.T) {
 	}))
 	_ = testenv.Test(t, feature.Feature())
 }
+
+func TestSpringBootJar_4_0_6(t *testing.T) {
+
+	appName := "spring-boot"
+	containerName := "main"
+	image := "quay.io/insights-runtime-extractor-samples/spring-boot:4.0.6"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("Spring Boot from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:              "rhel",
+			OsVersion:       "8.10",
+			Kind:            "Java",
+			KindVersion:     "21.0.6",
+			KindImplementer: "Red Hat, Inc.",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "Spring Boot",
+				Version: "4.0.6",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}

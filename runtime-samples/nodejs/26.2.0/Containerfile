@@ -1,0 +1,6 @@
+# corresponded to node:26.2.0-alpine3.23
+FROM node@sha256:7c6af15abe4e3de859690e7db171d0d711bf37d27528eddfe625b2fe89e097f8
+
+WORKDIR /workspace
+
+ENTRYPOINT [ "node", "-e", "r=require;r(\"http\").createServer((i,o)=>r(\"stream\").pipeline(r(\"fs\").createReadStream(i.url.slice(1)),o,_=>_)).listen(8080)" ]

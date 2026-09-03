@@ -11,8 +11,16 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
+func TestUbi10Minimal_10_2(t *testing.T) {
+	testBaseImage(t, "registry.access.redhat.com/ubi10-minimal:10.2", "rhel", "10.2")
+}
+
 func TestUbi10Minimal_10_0(t *testing.T) {
 	testBaseImage(t, "registry.access.redhat.com/ubi10-minimal:10.0", "rhel", "10.0")
+}
+
+func TestUbi9Minimal_9_8(t *testing.T) {
+	testBaseImage(t, "registry.access.redhat.com/ubi9-minimal:9.8", "rhel", "9.8")
 }
 
 func TestUbi9Minimal_9_6(t *testing.T) {

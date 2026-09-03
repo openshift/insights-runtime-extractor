@@ -147,3 +147,31 @@ func TestWildFly_38_0_0_Final(t *testing.T) {
 	}))
 	_ = testenv.Test(t, feature.Feature())
 }
+
+func TestWildFly_40_0_0_Final(t *testing.T) {
+
+	appName := "wildfly-40-0-0-app"
+	containerName := "main"
+	// corresponded to quay.io/wildfly/wildfly:40.0.0.Final-jdk21
+	image := "quay.io/wildfly/wildfly@sha256:d974604dafe72557654d834d1dec060e953429b7ecf3d7dac3988d95514a3caa"
+	deployment := newAppDeployment(namespace, appName, 1, containerName, image)
+
+	feature := features.New("WildFly from "+image).
+	Setup(deployTestResource(deployment, appName)).
+	Teardown(undeployTestResource(deployment, appName)).
+	Assess("runtime info extracted", checkExtractedRuntimeInfo(namespace, "app="+appName, containerName, func(g *Ω.WithT, runtimeInfo types.ContainerRuntimeInfo) {
+		expected := types.ContainerRuntimeInfo{
+			Os:              "rhel",
+			OsVersion:       "9.8",
+			Kind:            "Java",
+			KindVersion:     "21.0.11",
+			KindImplementer: "Eclipse Adoptium",
+			Runtimes: []types.RuntimeComponent{{
+				Name:    "WildFly",
+				Version: "40.0.0.Final",
+			}},
+		}
+		g.Expect(runtimeInfo).Should(Ω.Equal(expected))
+	}))
+	_ = testenv.Test(t, feature.Feature())
+}
