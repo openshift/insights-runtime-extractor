@@ -9,7 +9,7 @@ impl FingerPrint for Os {
     fn can_apply_to(
         &self,
         _config: &Config,
-        out_dir: &String,
+        out_dir: &str,
         _process: &ContainerProcess,
     ) -> Option<Vec<String>> {
         Some(vec![String::from("./fpr_os"), out_dir.to_string()])

@@ -52,7 +52,7 @@ pub struct RuntimeInfo {
     runtimes: Vec<RuntimeComponentInfo>,
 }
 
-pub fn scan_container(config: &Config, out: &String, container: &Container) {
+pub fn scan_container(config: &Config, out: &str, container: &Container) {
     let container_id = match container.id.strip_prefix("cri-o://") {
         Some(id) => id.to_string(),
         None => container.id.to_string(),
@@ -73,15 +73,17 @@ pub fn scan_container(config: &Config, out: &String, container: &Container) {
     // fingerprint only the first process
     debug!("🔎  Fingerprinting {} processes...", leaves.len());
 
-    if let Some(process) = leaves.get(0) {
+    if let Some(process) = leaves.first() {
         // create a directory to store this process' fingerprints
         // that is put it under a directory from the executing process so that concurrent
         // execution are stored in separate directories.
         let container_output = format!("{}/{}", out, &process.pid);
-        file::create_dir(&container_output).expect(&format!(
-            "Can not create output directory for container {}",
-            &container.id
-        ));
+        file::create_dir(&container_output).unwrap_or_else(|_| {
+            panic!(
+                "Can not create output directory for container {}",
+                &container.id
+            )
+        });
 
         let mut container_info = HashMap::new();
         container_info.insert(String::from("pod-name"), container.pod_name.clone());
@@ -98,12 +100,11 @@ pub fn scan_container(config: &Config, out: &String, container: &Container) {
 
         // copy the config.toml to the pid_output so that it can be read by fingerprints executables
         fs::copy("/config.toml", container_output.clone() + "/config.toml")
-            .ok()
             .expect("Copy configuration for fingerprints execution");
 
         let start = Instant::now();
 
-        let _ = fork_and_exec(&config, &process, &current_dir, &container_output);
+        let _ = fork_and_exec(config, process, &current_dir, &container_output);
 
         let duration = start.elapsed().as_millis();
         trace!("🕑 Executed fingerprints in {:?}ms", duration);
@@ -114,7 +115,7 @@ fn fork_and_exec(
     config: &Config,
     process: &ContainerProcess,
     current_dir: &File,
-    out_dir: &String,
+    out_dir: &str,
 ) -> Result<(), ScannerError> {
     debug!("Storing fingerprints content in {}", out_dir);
 
@@ -123,14 +124,14 @@ fn fork_and_exec(
             match waitpid(child, None) {
                 Err(e) => warn!("Error: problem waiting for child: {e}"),
                 Ok(w) => match w {
-                    WaitStatus::Exited(_, code) if code == 0 => {}
+                    WaitStatus::Exited(_, 0) => {}
                     WaitStatus::Exited(_, code) if code != 0 => {
                         warn!("Error: problem with child: returned {code}")
                     }
                     _ => warn!("Error: problem with child: {:?}", w),
                 },
             }
-            return Ok(());
+            Ok(())
         }
 
         Ok(ForkResult::Child) => {
@@ -143,7 +144,7 @@ fn fork_and_exec(
                 perms::check_no_privileged_perms()
                     .expect("Must not have privileged permissions to run fingerprints");
             }
-            fingerprint::run_fingerprints(&config, out_dir, &process);
+            fingerprint::run_fingerprints(config, out_dir, process);
 
             let duration = start.elapsed().as_millis();
             trace!("Child process executed in {:?}ms", duration);
@@ -171,9 +172,9 @@ fn join_process_namespaces(pid: u32) -> Result<(), ScannerError> {
     ];
 
     for ns in namespaces {
-        let f = File::open(&ns).expect(&format!("Open namespace file {:?}", &ns));
+        let f = File::open(&ns).unwrap_or_else(|_| panic!("Open namespace file {:?}", &ns));
         let fd: BorrowedFd<'_> = f.as_fd();
-        setns(fd, CloneFlags::empty()).expect(&format!("join namespace {:?}", &ns));
+        setns(fd, CloneFlags::empty()).unwrap_or_else(|_| panic!("join namespace {:?}", &ns));
     }
 
     Ok(())
@@ -181,5 +182,5 @@ fn join_process_namespaces(pid: u32) -> Result<(), ScannerError> {
 
 fn switch_user(uid: u32) -> Result<(), ScannerError> {
     debug!("🧑‍💻 Becoming user: {uid}");
-    seteuid(uid.into()).map_err(|e| ScannerError::Errno(e))
+    seteuid(uid.into()).map_err(ScannerError::Errno)
 }

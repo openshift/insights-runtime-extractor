@@ -8,64 +8,57 @@ pub struct Java {}
 
 impl Java {
     /// Check if the Java process is started with a jboss.home.dir system property or JBOSS_HOME env var
-    fn jboss_modules_executable(
-        out_dir: &String,
-        process: &ContainerProcess,
-    ) -> Option<Vec<String>> {
+    fn jboss_modules_executable(out_dir: &str, process: &ContainerProcess) -> Option<Vec<String>> {
         debug!(
             "Process {} is using JBoss Modules with command line {:#?}",
-            &process.pid, &process.command_line
+            process.pid, process.command_line
         );
 
         if process.environ.contains_key("JBOSS_HOME") {
             let jboss_home_dir = process.environ.get("JBOSS_HOME").unwrap().to_string();
             debug!(
                 "Process {} is using JBoss Module from JBoss Home {:#?}",
-                &process.pid, jboss_home_dir
+                process.pid, jboss_home_dir
             );
 
-            return  Some(vec![
-                    String::from("./fpr_java_jboss_modules"),
-                    out_dir.to_string(),
-                    jboss_home_dir,
-                ])
+            return Some(vec![
+                String::from("./fpr_java_jboss_modules"),
+                out_dir.to_string(),
+                jboss_home_dir,
+            ]);
         }
 
-        return process
+        process
             .command_line
             .iter()
             .position(|s| s.starts_with("-Djboss.home.dir"))
             .and_then(|i| process.command_line.get(i))
             .and_then(|jboss_home_dir_sys_prop| jboss_home_dir_sys_prop.split_once("="))
-            .and_then(|(_, jboss_home_dir)| {
+            .map(|(_, jboss_home_dir)| {
                 debug!(
                     "Process {} is using JBoss Module from JBoss Home {:#?}",
-                    &process.pid, jboss_home_dir
+                    process.pid, jboss_home_dir
                 );
 
-                Some(vec![
+                vec![
                     String::from("./fpr_java_jboss_modules"),
                     out_dir.to_string(),
                     jboss_home_dir.to_string(),
-                ])
-            });
+                ]
+            })
     }
 
-    fn jar_executable(
-        out_dir: &String,
-        process: &ContainerProcess,
-        jar: &str,
-    ) -> Option<Vec<String>> {
+    fn jar_executable(out_dir: &str, process: &ContainerProcess, jar: &str) -> Option<Vec<String>> {
         let jar = match jar {
             jar if jar.starts_with("/") => jar.to_owned(),
             jar => format!("{}/{}", process.cwd.as_deref().unwrap(), jar),
         };
 
-        return Some(vec![
+        Some(vec![
             String::from("./fpr_java_runtimes"),
             out_dir.to_string(),
             jar.to_string(),
-        ]);
+        ])
     }
 }
 
@@ -73,7 +66,7 @@ impl FingerPrint for Java {
     fn can_apply_to(
         &self,
         _config: &Config,
-        out_dir: &String,
+        out_dir: &str,
         process: &ContainerProcess,
     ) -> Option<Vec<String>> {
         if !process.name.ends_with("java") {
@@ -91,9 +84,9 @@ impl FingerPrint for Java {
             .and_then(|jar| {
                 debug!("Executable jar is {:?}", jar);
                 if jar.ends_with("jboss-modules.jar") {
-                    return Java::jboss_modules_executable(&out_dir, process);
+                    Java::jboss_modules_executable(out_dir, process)
                 } else {
-                    return Java::jar_executable(&out_dir, process, jar);
+                    Java::jar_executable(out_dir, process, jar)
                 }
             });
 
@@ -123,9 +116,9 @@ impl FingerPrint for Java {
                                 let main_jar = java_fingerprints_config.main_jar.as_ref().unwrap();
                                 jar.contains(main_jar)
                             })
-                            .and_then(|jar| return Java::jar_executable(&out_dir, process, &jar));
+                            .and_then(|jar| Java::jar_executable(out_dir, process, jar));
                         if found.is_some() {
-                            return found.into();
+                            return found;
                         }
                     }
                 }
