@@ -1,10 +1,11 @@
 use log::{debug, trace};
 use std::collections::HashMap;
+use std::fmt;
 use std::fs;
 use std::time::Instant;
 use sysinfo::{Pid, System, Uid};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ContainerProcess {
     pub pid: u32,
     pub uid: Uid,
@@ -12,6 +13,19 @@ pub struct ContainerProcess {
     pub command_line: Vec<String>,
     pub cwd: Option<String>,
     pub environ: HashMap<String, String>,
+}
+
+// redact the environ from the debug output of the ContainerProcess/
+impl fmt::Debug for ContainerProcess {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ContainerProcess")
+            .field("pid", &self.pid)
+            .field("uid", &self.uid)
+            .field("name", &self.name)
+            .field("command_line", &self.command_line)
+            .field("cwd", &self.cwd)
+            .finish()
+    }
 }
 
 pub fn get_process_leaves(pid: &u32) -> Vec<ContainerProcess> {
