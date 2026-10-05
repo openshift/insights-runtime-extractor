@@ -5,11 +5,14 @@ use std::io::{self, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
+/// Owner-only access (rwx------) for the top-level scan directory.
+pub const SCAN_DIR_MODE: u32 = 0o700;
+/// Owner + group access (rwxrwx---) for per-container output directories.
+pub const CONTAINER_DIR_MODE: u32 = 0o770;
+
 /// Create a directory and return its File.
 /// Remove the directory if it exists before creating it.
-///
-/// The directory is created with 777 permissions so that anybody can write into it.
-pub fn create_dir(name: &str) -> io::Result<File> {
+pub fn create_dir(name: &str, mode: u32) -> io::Result<File> {
     debug!("📂  (re)creating dir {}", name);
 
     if let Err(e) = fs::remove_dir_all(&name) {
@@ -18,7 +21,7 @@ pub fn create_dir(name: &str) -> io::Result<File> {
         }
     }
     fs::create_dir(name)?;
-    fs::set_permissions(&name, fs::Permissions::from_mode(0o777))?;
+    fs::set_permissions(&name, fs::Permissions::from_mode(mode))?;
 
     File::open(&name)
 }
@@ -82,7 +85,7 @@ mod tests {
     #[test]
     fn it_write_fingerprint() {
         let out = String::from("target/tmp-test");
-        create_dir(&out).expect("Create temporary directory");
+        create_dir(&out, SCAN_DIR_MODE).expect("Create temporary directory");
 
         let mut entries = HashMap::new();
         entries.insert(String::from("foo"), String::from("value1"));
