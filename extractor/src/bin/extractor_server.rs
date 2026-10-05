@@ -25,7 +25,8 @@ fn main() {
 
     let log_level = args.log_level.unwrap_or(String::from("info"));
 
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level.clone())).init();
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or(log_level.clone()))
+        .init();
 
     info!("Gather runtime information from containers on OpenShift");
 

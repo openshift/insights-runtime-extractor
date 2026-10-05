@@ -6,6 +6,13 @@
 - Exceptions are files which have their own naming conventions (e.g. Dockerfile, Makefile, README)
 - Automation scripts should be stored into `dotdirs` (eg .githooks, .openshiftci)
 
+## Rust
+
+- All Rust code should be formatted by `cargo fmt`
+- Code should pass `cargo clippy -- -D warnings` with no errors
+- Run `make lint` (inside the rust-dev container) to check both
+- Run `make fix` (inside the rust-dev container) to auto-fix Clippy and formatting issues
+
 ## Go
 
 - All go code should be formatted by gofmt

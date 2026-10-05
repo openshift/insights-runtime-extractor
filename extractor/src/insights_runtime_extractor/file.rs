@@ -12,15 +12,15 @@ use std::path::Path;
 pub fn create_dir(name: &str) -> io::Result<File> {
     debug!("📂  (re)creating dir {}", name);
 
-    if let Err(e) = fs::remove_dir_all(&name) {
+    if let Err(e) = fs::remove_dir_all(name) {
         if e.kind() != io::ErrorKind::NotFound {
             return Err(e);
         }
     }
     fs::create_dir(name)?;
-    fs::set_permissions(&name, fs::Permissions::from_mode(0o777))?;
+    fs::set_permissions(name, fs::Permissions::from_mode(0o777))?;
 
-    File::open(&name)
+    File::open(name)
 }
 
 /// Read a key=value file and return its content in a HashMap.
@@ -50,7 +50,7 @@ pub fn write_entries(
     file_name: &str,
     entries: &HashMap<String, String>,
 ) -> io::Result<()> {
-    if entries.len() == 0 {
+    if entries.is_empty() {
         return Ok(());
     }
 

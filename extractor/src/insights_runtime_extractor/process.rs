@@ -19,21 +19,18 @@ pub fn get_process_leaves(pid: &u32) -> Vec<ContainerProcess> {
 
     let s = System::new_all();
 
-    let leaves = get_leaves(&pid);
+    let leaves = get_leaves(pid);
     debug!("got leaves: {:#?}", leaves);
 
-    let res: Vec<ContainerProcess>= leaves
+    let res: Vec<ContainerProcess> = leaves
         .iter()
-        .map(|pid| s.process(Pid::from_u32(*pid)))
-        .flatten()
+        .filter_map(|pid| s.process(Pid::from_u32(*pid)))
         .map(|process| self::ContainerProcess {
             pid: process.pid().as_u32(),
             uid: process.user_id().unwrap().clone(),
             name: process.name().to_string(),
             command_line: process.cmd().iter().map(String::from).collect(),
-            cwd: process
-                .cwd()
-                .and_then(|p| Some(p.to_string_lossy().into_owned())),
+            cwd: process.cwd().map(|p| p.to_string_lossy().into_owned()),
             environ: get_environ_hashmap(process.environ()),
         })
         .collect();
@@ -48,7 +45,7 @@ fn get_leaves(root_pid: &u32) -> Vec<u32> {
     debug!("Detecting leaves: {:#?}", root_pid);
 
     let mut leaves = Vec::new();
-    collect_leaves(&root_pid, &mut leaves);
+    collect_leaves(root_pid, &mut leaves);
 
     leaves
 }
@@ -58,7 +55,7 @@ fn collect_leaves(pid: &u32, leaves: &mut Vec<u32>) {
 
     let path = format!("/proc/{}/task/{}/children", pid, pid);
     if let Ok(content) = fs::read_to_string(path) {
-        if content.len() == 0 {
+        if content.is_empty() {
             // no child, add the pid itself and returns
             leaves.push(*pid);
             return;

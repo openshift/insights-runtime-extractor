@@ -13,7 +13,7 @@ trait FingerPrint {
     fn can_apply_to(
         &self,
         config: &Config,
-        out_dir: &String,
+        out_dir: &str,
         process: &ContainerProcess,
     ) -> Option<Vec<String>>;
 }
@@ -27,14 +27,14 @@ fn fingerprints() -> Vec<Box<dyn FingerPrint>> {
     ]
 }
 
-pub fn run_fingerprints(config: &Config, out_dir: &String, process: &ContainerProcess) {
-    debug!("👆 Fingerprinting process {}", &process.pid);
+pub fn run_fingerprints(config: &Config, out_dir: &str, process: &ContainerProcess) {
+    debug!("👆 Fingerprinting process {}", process.pid);
 
     for fingerprint in fingerprints() {
-        if let Some(exec) = fingerprint.can_apply_to(config, &out_dir, &process) {
-            debug!("Executing {:?}", &exec);
+        if let Some(exec) = fingerprint.can_apply_to(config, out_dir, process) {
+            debug!("Executing {:?}", exec);
             if let Some((command, args)) = exec.split_first() {
-                let command = Command::new(&command).args(args).output();
+                let command = Command::new(command).args(args).output();
 
                 match command {
                     Ok(output) => match output.status.success() {
