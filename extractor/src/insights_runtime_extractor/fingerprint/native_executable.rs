@@ -25,12 +25,15 @@ impl FingerPrint for NativeExecutable {
         // to get their versions
         match version_exec.can_apply_to(&config, &out_dir, &process) {
             Some(_) => None,
-            None => Some(vec![
-                String::from("./fpr_native_executable"),
-                out_dir.to_string(),
-                process.cwd.as_ref().unwrap().clone(),
-                process.command_line.get(0)?.clone(),
-            ]),
+            None => {
+                let cwd = process.cwd.as_ref()?;
+                Some(vec![
+                    String::from("./fpr_native_executable"),
+                    out_dir.to_string(),
+                    cwd.clone(),
+                    process.command_line.get(0)?.clone(),
+                ])
+            }
         }
     }
 }

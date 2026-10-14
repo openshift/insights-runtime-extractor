@@ -22,6 +22,17 @@ spec:
         - name: exporter
           image: quay.io/openshift/origin-insights-runtime-exporter:latest
           imagePullPolicy: Always
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 200Mi
           volumeMounts:
             - mountPath: /data
               name: data-volume
@@ -37,11 +48,7 @@ spec:
               value: unix:///crio.sock
           securityContext:
             privileged: true
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - CAP_SYS_ADMIN
+            readOnlyRootFilesystem: true
           volumeMounts:
             - mountPath: /crio.sock
               name: crio-socket
