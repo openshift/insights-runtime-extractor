@@ -26,6 +26,13 @@ impl FingerPrint for VersionExecutable {
             .iter()
             .find(|c| c.process_names.contains(&process.name))
         {
+            // Skip for uid-0 workloads: fpr_kind_executable runs the
+            // workload's own binary, which would retain root DAC access
+            // to the CRI-O socket via the orphaned cwd.
+            if *process.uid == 0 {
+                debug!("Skipping workload binary execution for uid-0 workload");
+                return None;
+            }
             return Some(vec![
                 fpr_kind_executable,
                 out_dir.to_string(),
@@ -46,11 +53,4 @@ impl FingerPrint for VersionExecutable {
 
         None
     }
-}
-
-pub fn is_version_executable(process: &ContainerProcess) -> bool {
-    let proc_name = &process.name;
-    let proc_cmd = &process.command_line[0];
-
-    proc_name.ends_with("node") || proc_cmd.contains("python") || proc_cmd.contains("java")
 }
