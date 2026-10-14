@@ -2,12 +2,13 @@ use log::{debug, trace};
 use std::collections::HashMap;
 use std::fs;
 use std::time::Instant;
-use sysinfo::{Pid, System, Uid};
+use sysinfo::{Gid, Pid, System, Uid};
 
 #[derive(Clone, Debug)]
 pub struct ContainerProcess {
     pub pid: u32,
     pub uid: Uid,
+    pub gid: Gid,
     pub name: String,
     pub command_line: Vec<String>,
     pub cwd: Option<String>,
@@ -24,17 +25,21 @@ pub fn get_process_leaves(pid: &u32) -> Vec<ContainerProcess> {
 
     let res: Vec<ContainerProcess>= leaves
         .iter()
-        .map(|pid| s.process(Pid::from_u32(*pid)))
-        .flatten()
-        .map(|process| self::ContainerProcess {
-            pid: process.pid().as_u32(),
-            uid: process.user_id().unwrap().clone(),
-            name: process.name().to_string(),
-            command_line: process.cmd().iter().map(String::from).collect(),
-            cwd: process
-                .cwd()
-                .and_then(|p| Some(p.to_string_lossy().into_owned())),
-            environ: get_environ_hashmap(process.environ()),
+        .filter_map(|pid| s.process(Pid::from_u32(*pid)))
+        .filter_map(|process| {
+            let uid = process.user_id()?.clone();
+            let gid = process.group_id()?;
+            Some(self::ContainerProcess {
+                pid: process.pid().as_u32(),
+                uid,
+                gid,
+                name: process.name().to_string(),
+                command_line: process.cmd().iter().map(String::from).collect(),
+                cwd: process
+                    .cwd()
+                    .and_then(|p| Some(p.to_string_lossy().into_owned())),
+                environ: get_environ_hashmap(process.environ()),
+            })
         })
         .collect();
 
