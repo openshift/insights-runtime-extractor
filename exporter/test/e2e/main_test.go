@@ -69,6 +69,8 @@ func TestMain(m *testing.M) {
 
 func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExporterImage string) *appsv1.DaemonSet {
 	securityContextPrivileged := true
+	securityContextNotPrivileged := false
+	securityContextReadOnlyRootFilesystem := true
 	hostPathSocket := corev1.HostPathSocket
 	labels := map[string]string{"app.kubernetes.io/name": "insights-runtime-extractor-e2e"}
 
@@ -92,11 +94,9 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 							Value: "unix:///crio.sock",
 						}},
 						SecurityContext: &corev1.SecurityContext{
-							Privileged: &securityContextPrivileged,
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-								Add:  []corev1.Capability{"CAP_SYS_ADMIN"},
-							}},
+							Privileged:             &securityContextPrivileged,
+							ReadOnlyRootFilesystem: &securityContextReadOnlyRootFilesystem,
+						},
 						VolumeMounts: []corev1.VolumeMount{{
 							MountPath: "/crio.sock",
 							Name:      "crio-socket",
@@ -109,6 +109,14 @@ func newInsightsRuntimeExtractorDaemonSet(testedExtractorImage string, testedExp
 						Name:            "exporter",
 						Image:           testedExporterImage,
 						ImagePullPolicy: corev1.PullAlways,
+						SecurityContext: &corev1.SecurityContext{
+							Privileged:                &securityContextNotPrivileged,
+							AllowPrivilegeEscalation:  &securityContextNotPrivileged,
+							ReadOnlyRootFilesystem:    &securityContextReadOnlyRootFilesystem,
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"ALL"},
+							},
+						},
 						VolumeMounts: []corev1.VolumeMount{{
 							MountPath: "/data",
 							Name:      "data-volume",
